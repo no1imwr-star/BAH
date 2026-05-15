@@ -3,7 +3,7 @@ services:
     name: crm-process-optimizer
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: streamlit run artifacts/crm-optimizer/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    startCommand: python artifacts/crm-optimizer/main.py
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"

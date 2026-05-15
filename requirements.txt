@@ -1,5 +1,12 @@
-streamlit
+fastapi
+uvicorn
+jinja2
+python-multipart
 pandas
 openpyxl
 xlrd
 openai
+fastapi
+jinja2
+python-multipart
+uvicorn

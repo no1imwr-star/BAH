@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CRM Process Optimizer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
+
+    header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); color: #fff; padding: 28px 40px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -.5px; }
+    header p  { font-size: .9rem; opacity: .7; margin-top: 4px; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    /* ---------- input card ---------- */
+    .card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .card h2 { font-size: 1.1rem; font-weight: 600; color: #374151; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+    .card h2::before { content: ""; display: inline-block; width: 4px; height: 18px; background: #0f3460; border-radius: 2px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media(max-width: 720px){ .form-grid { grid-template-columns: 1fr; } }
+
+    label { display: block; font-size: .85rem; font-weight: 500; color: #6b7280; margin-bottom: 6px; }
+
+    .upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: #fafafa; }
+    .upload-area:hover, .upload-area.dragover { border-color: #0f3460; background: #eff6ff; }
+    .upload-area input { display: none; }
+    .upload-area .icon { font-size: 2rem; }
+    .upload-area .hint { font-size: .8rem; color: #9ca3af; margin-top: 6px; }
+    .upload-area .filename { font-size: .85rem; color: #0f3460; font-weight: 500; margin-top: 8px; word-break: break-all; }
+
+    textarea { width: 100%; min-height: 140px; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; font-size: .9rem; font-family: inherit; resize: vertical; transition: border-color .2s; }
+    textarea:focus { outline: none; border-color: #0f3460; }
+    textarea::placeholder { color: #9ca3af; }
+
+    .btn-analyze { margin-top: 24px; width: 100%; padding: 14px; background: linear-gradient(135deg, #0f3460, #1a6bbf); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; letter-spacing: .3px; transition: opacity .2s, transform .1s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .btn-analyze:hover:not(:disabled) { opacity: .92; transform: translateY(-1px); }
+    .btn-analyze:disabled { opacity: .6; cursor: not-allowed; }
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ---------- demo badge ---------- */
+    .demo-badge { display: none; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 16px; font-size: .85rem; color: #92400e; margin-bottom: 20px; }
+
+    /* ---------- results ---------- */
+    #results { display: none; margin-top: 32px; }
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px; }
+    .tab { padding: 10px 22px; border: none; background: none; font-size: .9rem; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; }
+    .tab.active { color: #0f3460; border-color: #0f3460; background: #eff6ff; }
+    .tab:hover:not(.active) { color: #374151; background: #f9fafb; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ---------- BPMN viewer ---------- */
+    .bpmn-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+    .btn-sm { padding: 6px 14px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; font-size: .82rem; font-weight: 500; cursor: pointer; transition: background .15s; color: #374151; }
+    .btn-sm:hover { background: #f3f4f6; }
+    .btn-download { background: #0f3460; color: #fff; border-color: #0f3460; margin-left: auto; }
+    .btn-download:hover { background: #1a5496; }
+
+    #bpmn-canvas { width: 100%; height: 520px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; overflow: hidden; }
+    .bpmn-error { padding: 14px 18px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; color: #991b1b; font-size: .85rem; display: none; margin-top: 8px; }
+
+    /* ---------- Use Case ---------- */
+    .uc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+    .uc-body { background: #fafafa; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 24px 28px; max-height: 620px; overflow-y: auto; line-height: 1.7; font-size: .92rem; }
+    .uc-body h1 { font-size: 1.3rem; margin-bottom: 4px; color: #111827; }
+    .uc-body h2 { font-size: 1rem; color: #0f3460; margin: 20px 0 8px; }
+    .uc-body h3 { font-size: .92rem; color: #374151; margin: 16px 0 6px; }
+    .uc-body p  { margin-bottom: 8px; }
+    .uc-body table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .85rem; }
+    .uc-body th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-weight: 500; }
+    .uc-body td { padding: 7px 12px; border-bottom: 1px solid #e5e7eb; }
+    .uc-body tr:nth-child(even) td { background: #f9fafb; }
+    .uc-body ul, .uc-body ol { padding-left: 20px; margin-bottom: 8px; }
+    .uc-body strong, .uc-body b { color: #111827; }
+    .uc-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+    .uc-body code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: .85em; }
+
+    /* ---------- error ---------- */
+    #error-box { display: none; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 14px 18px; color: #991b1b; font-size: .9rem; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="8" fill="rgba(255,255,255,.15)"/>
+    <path d="M8 18h4m12 0h4M18 8v4m0 12v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+    <rect x="13" y="13" width="10" height="10" rx="2" fill="none" stroke="#fff" stroke-width="2"/>
+    <circle cx="8" cy="18" r="2.5" fill="#64b5f6"/>
+    <circle cx="28" cy="18" r="2.5" fill="#64b5f6"/>
+    <circle cx="18" cy="8"  r="2.5" fill="#64b5f6"/>
+    <circle cx="18" cy="28" r="2.5" fill="#64b5f6"/>
+  </svg>
+  <div>
+    <h1>CRM Process Optimizer</h1>
+    <p>Загрузите данные → опишите проблему → получите BPMN-схему и Use Case от AI</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Входные данные</h2>
+    <div class="form-grid">
+      <!-- File upload -->
+      <div>
+        <label>CRM-данные (CSV / Excel)</label>
+        <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="onFileSelected(this)"/>
+          <div class="icon">📂</div>
+          <div style="margin-top:8px;font-size:.9rem;color:#374151;">Нажмите или перетащите файл</div>
+          <div class="hint">.csv, .xlsx, .xls</div>
+          <div class="filename" id="file-name"></div>
+        </div>
+      </div>
+      <!-- Problem description -->
+      <div>
+        <label>Описание проблемы</label>
+        <textarea id="problem" placeholder="Например: Сделки зависают на этапе ТЗ, менеджеры долго отвечают. Конверсия падает, много лидов теряется на этапе квалификации."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
+      <div class="spinner" id="spinner"></div>
+      <span id="btn-label">🚀 Сгенерировать процесс To-Be</span>
+    </button>
+  </div>
+
+  <div id="error-box"></div>
+
+  <div id="results">
+    <div class="demo-badge" id="demo-badge">
+      ℹ️ <strong>Демо-режим:</strong> OPENAI_API_KEY не задан — показан типовой шаблон.
+      Добавьте ключ в переменные окружения для персонализированного анализа.
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bpmn',this)">📊 Интерактивная BPMN-схема</button>
+      <button class="tab"        onclick="switchTab('uc',this)">📄 Use Cases / ТЗ</button>
+    </div>
+
+    <!-- BPMN tab -->
+    <div class="tab-panel active" id="tab-bpmn">
+      <div class="bpmn-toolbar">
+        <button class="btn-sm" onclick="bpmnZoom(1.2)">＋</button>
+        <button class="btn-sm" onclick="bpmnZoom(0.8)">－</button>
+        <button class="btn-sm" onclick="bpmnFit()">По размеру</button>
+        <button class="btn-sm" onclick="bpmnReset()">1:1</button>
+        <button class="btn-sm btn-download" onclick="downloadBpmn()">⬇ Скачать .bpmn</button>
+      </div>
+      <div id="bpmn-canvas"></div>
+      <div class="bpmn-error" id="bpmn-error"></div>
+    </div>
+
+    <!-- Use Case tab -->
+    <div class="tab-panel" id="tab-uc">
+      <div class="uc-header">
+        <span style="font-weight:600;color:#374151;">Use Case / Техническое задание</span>
+        <button class="btn-sm btn-download" onclick="downloadUC()">⬇ Скачать .md</button>
+      </div>
+      <div class="uc-body" id="uc-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- bpmn-js via CDN -->
+<script src="https://unpkg.com/bpmn-js@17.2.1/dist/bpmn-viewer.development.js"></script>
+<!-- marked.js for Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+
+<script>
+var _bpmnViewer = null;
+var _bpmnXml    = '';
+var _ucText      = '';
+
+/* ---- drag & drop ---- */
+var dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', function(){ dz.classList.remove('dragover'); });
+dz.addEventListener('drop', function(e){
+  e.preventDefault(); dz.classList.remove('dragover');
+  var f = e.dataTransfer.files[0];
+  if(f){ document.getElementById('file-input').files = e.dataTransfer.files; onFileSelected(document.getElementById('file-input')); }
+});
+
+function onFileSelected(inp){
+  var n = inp.files[0] ? inp.files[0].name : '';
+  document.getElementById('file-name').textContent = n ? '✓ ' + n : '';
+}
+
+/* ---- tabs ---- */
+function switchTab(name, btn){
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if(name === 'bpmn' && _bpmnViewer){ setTimeout(function(){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); }, 50); }
+}
+
+/* ---- analyze ---- */
+async function analyze(){
+  var btn = document.getElementById('analyze-btn');
+  var spinner = document.getElementById('spinner');
+  var label   = document.getElementById('btn-label');
+  var errBox  = document.getElementById('error-box');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  label.textContent = 'Анализируем…';
+  errBox.style.display = 'none';
+  document.getElementById('results').style.display = 'none';
+
+  var fd = new FormData();
+  fd.append('problem', document.getElementById('problem').value);
+  var fi = document.getElementById('file-input');
+  if(fi.files[0]) fd.append('file', fi.files[0]);
+
+  try {
+    var res = await fetch('/analyze', { method: 'POST', body: fd });
+    var data = await res.json();
+
+    if(!res.ok || data.error){
+      errBox.textContent = '⚠ ' + (data.error || 'Неизвестная ошибка');
+      errBox.style.display = 'block';
+      return;
+    }
+
+    _bpmnXml = data.bpmn_xml;
+    _ucText  = data.use_case;
+
+    document.getElementById('demo-badge').style.display = data.demo ? 'block' : 'none';
+    document.getElementById('results').style.display = 'block';
+
+    renderBpmn(_bpmnXml);
+    renderUC(_ucText);
+
+    /* reset to BPMN tab */
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelector('.tab').classList.add('active');
+    document.getElementById('tab-bpmn').classList.add('active');
+
+  } catch(e) {
+    errBox.textContent = '⚠ Ошибка сети: ' + e.message;
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    label.textContent = '🚀 Сгенерировать процесс To-Be';
+  }
+}
+
+/* ---- BPMN rendering ---- */
+function renderBpmn(xml){
+  var errDiv = document.getElementById('bpmn-error');
+  errDiv.style.display = 'none';
+
+  if(_bpmnViewer){ _bpmnViewer.destroy(); }
+  _bpmnViewer = new BpmnJS({ container: '#bpmn-canvas' });
+
+  _bpmnViewer.importXML(xml).then(function(){
+    _bpmnViewer.get('canvas').zoom('fit-viewport','auto');
+  }).catch(function(err){
+    errDiv.textContent = 'Ошибка рендеринга BPMN: ' + err.message;
+    errDiv.style.display = 'block';
+  });
+}
+
+function bpmnZoom(f){ if(_bpmnViewer){ var c=_bpmnViewer.get('canvas'); c.zoom(c.zoom()*f); } }
+function bpmnFit(){  if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); } }
+function bpmnReset(){ if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom(1); } }
+
+/* ---- Use Case rendering ---- */
+function renderUC(md){
+  document.getElementById('uc-body').innerHTML = marked.parse(md || '');
+}
+
+/* ---- downloads ---- */
+function downloadBpmn(){
+  if(!_bpmnXml) return;
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([_bpmnXml], {type:'application/xml'}));
+  a.download = 'crm_to_be.bpmn'; a.click();
+}
+function downloadUC(){
+  if(!_ucText) return;
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([_ucText], {type:'text/markdown'}));
+  a.download = 'crm_use_case.md'; a.click();
+}
+</script>
+</body>
+</html>
