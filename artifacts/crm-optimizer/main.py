@@ -230,12 +230,26 @@ async def analyze(
     if file and file.filename:
         try:
             contents = await file.read()
-            if file.filename.endswith(".csv"):
+            if file.filename.lower().endswith(".csv"):
                 df = pd.read_csv(io.BytesIO(contents))
+            elif file.filename.lower().endswith((".xlsx", ".xls")):
+                df = pd.read_excel(io.BytesIO(contents), engine="openpyxl")
             else:
-                df = pd.read_excel(io.BytesIO(contents))
+                return JSONResponse(
+                    {"error": "Неподдерживаемый формат файла. Загрузите .csv, .xlsx или .xls."},
+                    status_code=400,
+                )
         except Exception as e:
-            return JSONResponse({"error": f"Ошибка чтения файла: {e}"}, status_code=400)
+            msg = str(e)
+            if "engine" in msg.lower() or "format" in msg.lower() or "xlrd" in msg.lower():
+                friendly = (
+                    "Пожалуйста, проверьте формат файла. "
+                    "Если это CSV — переименуйте расширение в .csv. "
+                    "Для Excel используйте формат .xlsx."
+                )
+            else:
+                friendly = f"Ошибка чтения файла: {msg}"
+            return JSONResponse({"error": friendly}, status_code=400)
 
     demo = get_openai_client() is None
     if demo:
