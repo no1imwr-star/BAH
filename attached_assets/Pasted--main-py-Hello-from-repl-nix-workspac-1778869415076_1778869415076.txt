@@ -1,0 +1,60 @@
+В файле main.py сейчас находится пустой скрипт, который просто выводит "Hello from repl-nix-workspace!" и завершает работу. Из-за этого деплой на Render падает с ошибкой "Application exited early".
+
+Пожалуйста, полностью перезапиши файл main.py, создав работающий веб-сервер FastAPI. Код должен выглядеть строго так:
+
+from fastapi import FastAPI, File, UploadFile, Form
+from fastapi.responses import HTMLResponse, MarkdownResponse
+import uvicorn
+import os
+
+app = FastAPI(title="CRM Process Optimizer")
+
+HTML_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRM Process Optimizer</title>
+    <link rel="stylesheet" href="https://jsdelivr.net">
+</head>
+<body>
+    <h1>🚀 CRM Process Optimizer</h1>
+    <p>Ассистент бизнес-аналитика: загрузите данные воронки и получите готовое ТЗ и BPMN-схему.</p>
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+        <label>1. Загрузите лог сделок (CSV или Excel):</label>
+        <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+        <br><br>
+        <label>2. Опишите проблему процесса продаж:</label>
+        <textarea name="problem" rows="4" cols="50" placeholder="Например: Сделки зависают на этапе коммерческого предложения..." required></textarea>
+        <br><br>
+        <button type="submit">Анализировать и создать артефакты</button>
+    </form>
+</body>
+</html>
+"""
+
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    return HTML_TEMPLATE
+
+@app.post("/analyze", response_class=HTMLResponse)
+async def analyze(file: UploadFile = File(...), problem: str = Form(...)):
+    # Демо-режим артефактов
+    use_case_text = f"### Спецификация требований (Use Case)\\n**Проблема:** {problem}\\n**Актор:** Менеджер по продажам\\n**Основной сценарий:**\\n1. Система фиксирует зависание сделки.\\n2. Автоматически создается задача на звонок клиенту."
+    
+    return f"""
+    <html>
+    <head><link rel="stylesheet" href="https://jsdelivr.net"></head>
+    <body>
+        <h2>🎯 Результаты анализа для файла: {file.filename}</h2>
+        <h3>1. Use Case / ТЗ для разработчика</h3>
+        <pre>{use_case_text}</pre>
+        <h3>2. Рекомендация по BPMN To-Be</h3>
+        <p>Автоматизировать отправку уведомлений при переходе сделки в статус ожидания.</p>
+        <a href="/">← Назад</a>
+    </body>
+    </html>
+    """
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)

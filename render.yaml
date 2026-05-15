@@ -3,7 +3,7 @@ services:
     name: crm-process-optimizer
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python artifacts/crm-optimizer/main.py
+    startCommand: cd artifacts/crm-optimizer && python main.py
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.0"

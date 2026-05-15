@@ -4,12 +4,10 @@ import json
 from datetime import datetime
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
-from fastapi.requests import Request
 import pandas as pd
 
 app = FastAPI(title="CRM Process Optimizer")
-templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+_HTML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "index.html")
 
 # ---------------------------------------------------------------------------
 # OpenAI — optional, graceful fallback
@@ -218,8 +216,9 @@ def _call_openai(df, problem: str):
 # Routes
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def index():
+    with open(_HTML_FILE, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 @app.post("/analyze")
