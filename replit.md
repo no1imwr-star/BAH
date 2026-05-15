@@ -1,44 +1,59 @@
-# [Project name]
+# CRM Process Optimizer
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A Streamlit web app that analyzes CRM data and generates optimized "To-Be" BPMN 2.0 process diagrams and structured Use Case documents using OpenAI GPT-4o.
 
 ## Run & Operate
 
+- `cd artifacts/crm-optimizer && streamlit run app.py --server.port 5000` — run the app
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `OPENAI_API_KEY` — OpenAI API key (optional; app runs in demo mode without it)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- **App:** Python 3.11 + Streamlit 1.x
+- **Data:** pandas, openpyxl, xlrd
+- **AI:** OpenAI GPT-4o via `openai>=1.0.0`
+- **BPMN rendering:** bpmn-js 17 via `streamlit.components.v1.html`
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
+- DB: PostgreSQL + Drizzle ORM (not used by the Streamlit app)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/crm-optimizer/app.py` — main Streamlit application (all logic in one file)
+- `artifacts/crm-optimizer/.streamlit/config.toml` — Streamlit server config (port 5000)
+- `artifacts/crm-optimizer/requirements.txt` — Python dependencies for Render.com deploy
+- `artifacts/crm-optimizer/runtime.txt` — Python version pin (`python-3.11.0`) for Render.com
+- `artifacts/api-server/src/` — Express API server (separate service)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Demo mode:** When `OPENAI_API_KEY` is absent, the app renders a built-in BPMN template and Use Case so users can evaluate the UI without credentials.
+- **JSON response format:** OpenAI is called with `response_format={"type": "json_object"}` to guarantee a parseable response containing both `bpmn_xml` and `use_case` keys in one request.
+- **bpmn-js via HTML component:** BPMN rendering is done entirely client-side via CDN-loaded bpmn-js injected through `streamlit.components.v1.html`. No server-side BPMN processing needed.
+- **Session state caching:** Generated BPMN and Use Case are stored in `st.session_state` so they survive Streamlit reruns without re-calling the API.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Upload CRM data (CSV / Excel) and describe a process bottleneck in plain text
+- AI analyzes column structure, funnel stages, and the problem description
+- Generates an interactive BPMN 2.0 diagram (pan + zoom) with Manager and CRM-system pools
+- Generates a Cockburn-style Use Case document with actors, steps, alternatives, and KPIs
+- Download results as `.bpmn` and `.md` files
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Language: Russian UI and generated content
+- Deployment target: Render.com (requirements.txt + runtime.txt included)
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The Streamlit workflow runs from the `artifacts/crm-optimizer/` directory — always `cd` there first
+- `st.rerun()` must be used instead of the deprecated `experimental_rerun()`
+- bpmn-js backtick characters in the XML must be escaped in the JS template literal
 
 ## Pointers
 
