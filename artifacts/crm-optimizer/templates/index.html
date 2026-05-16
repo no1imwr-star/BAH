@@ -3,155 +3,495 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CRM Process Optimizer</title>
+  <title>BAlance.ai — CRM Streamlining & Funnel Architecture</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; min-height: 100vh; }
 
-    header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); color: #fff; padding: 28px 40px; display: flex; align-items: center; gap: 16px; box-shadow: 0 4px 20px rgba(0,0,0,.3); }
-    header svg { flex-shrink: 0; }
-    header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -.5px; }
-    header p  { font-size: .9rem; opacity: .7; margin-top: 4px; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f7f7f7;
+      color: #222222;
+      min-height: 100vh;
+    }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    /* ── HEADER ── */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid #ebebeb;
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      background: #FF385C;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-mark svg { display: block; }
+    .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
+    .logo-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #222222;
+      letter-spacing: -0.3px;
+    }
+    .logo-name span { color: #FF385C; }
+    .logo-sub {
+      font-size: 0.68rem;
+      color: #717171;
+      font-weight: 400;
+      letter-spacing: 0.2px;
+    }
+    .header-badge {
+      font-size: 0.78rem;
+      color: #717171;
+      background: #f7f7f7;
+      border: 1px solid #ebebeb;
+      border-radius: 20px;
+      padding: 4px 12px;
+    }
 
-    /* ---------- input card ---------- */
-    .card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
-    .card h2 { font-size: 1.1rem; font-weight: 600; color: #374151; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
-    .card h2::before { content: ""; display: inline-block; width: 4px; height: 18px; background: #0f3460; border-radius: 2px; }
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 56px 24px 40px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #FF385C;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .hero h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      color: #222222;
+      line-height: 1.2;
+      letter-spacing: -0.8px;
+      margin-bottom: 14px;
+    }
+    .hero p {
+      font-size: 1rem;
+      color: #717171;
+      line-height: 1.6;
+      max-width: 520px;
+      margin: 0 auto;
+    }
 
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media(max-width: 720px){ .form-grid { grid-template-columns: 1fr; } }
+    /* ── CONTAINER ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
 
-    label { display: block; font-size: .85rem; font-weight: 500; color: #6b7280; margin-bottom: 6px; }
+    /* ── CARD ── */
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 36px 40px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+      border: 1px solid #ebebeb;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #222222;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title::before {
+      content: "";
+      display: inline-block;
+      width: 3px;
+      height: 16px;
+      background: #FF385C;
+      border-radius: 2px;
+    }
 
-    .upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 28px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: #fafafa; }
-    .upload-area:hover, .upload-area.dragover { border-color: #0f3460; background: #eff6ff; }
+    /* ── FORM GRID ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+
+    label.field-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #222222;
+      margin-bottom: 8px;
+      letter-spacing: 0.1px;
+    }
+    .field-hint {
+      font-size: 0.75rem;
+      color: #717171;
+      font-weight: 400;
+    }
+
+    /* ── UPLOAD AREA ── */
+    .upload-area {
+      border: 2px dashed #dddddd;
+      border-radius: 12px;
+      padding: 32px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #fafafa;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .upload-area:hover, .upload-area.dragover {
+      border-color: #FF385C;
+      background: #fff5f6;
+    }
     .upload-area input { display: none; }
-    .upload-area .icon { font-size: 2rem; }
-    .upload-area .hint { font-size: .8rem; color: #9ca3af; margin-top: 6px; }
-    .upload-area .filename { font-size: .85rem; color: #0f3460; font-weight: 500; margin-top: 8px; word-break: break-all; }
+    .upload-icon {
+      width: 44px;
+      height: 44px;
+      background: #f7f7f7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+      font-size: 1.3rem;
+    }
+    .upload-main-text {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #222222;
+      margin-bottom: 4px;
+    }
+    .upload-hint-text { font-size: 0.78rem; color: #717171; }
+    .upload-filename {
+      font-size: 0.82rem;
+      color: #FF385C;
+      font-weight: 600;
+      margin-top: 10px;
+      word-break: break-all;
+    }
 
-    textarea { width: 100%; min-height: 140px; border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; font-size: .9rem; font-family: inherit; resize: vertical; transition: border-color .2s; }
-    textarea:focus { outline: none; border-color: #0f3460; }
-    textarea::placeholder { color: #9ca3af; }
+    /* ── TEXTAREA ── */
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      border: 1.5px solid #dddddd;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      color: #222222;
+      background: #ffffff;
+      line-height: 1.5;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #FF385C;
+      box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
+    }
+    textarea::placeholder { color: #b0b0b0; }
 
-    .btn-analyze { margin-top: 24px; width: 100%; padding: 14px; background: linear-gradient(135deg, #0f3460, #1a6bbf); color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; letter-spacing: .3px; transition: opacity .2s, transform .1s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .btn-analyze:hover:not(:disabled) { opacity: .92; transform: translateY(-1px); }
-    .btn-analyze:disabled { opacity: .6; cursor: not-allowed; }
-    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+    /* ── ANALYZE BUTTON ── */
+    .btn-analyze {
+      margin-top: 28px;
+      width: 100%;
+      padding: 16px;
+      background: #FF385C;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.2px;
+      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(255, 56, 92, 0.3);
+    }
+    .btn-analyze:hover:not(:disabled) {
+      background: #e0314f;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(255, 56, 92, 0.35);
+    }
+    .btn-analyze:active:not(:disabled) { transform: translateY(0); }
+    .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ---------- demo badge ---------- */
-    .demo-badge { display: none; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 10px 16px; font-size: .85rem; color: #92400e; margin-bottom: 20px; }
+    /* ── INFO BOXES ── */
+    .info-box {
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 0.84rem;
+      margin-top: 16px;
+      display: none;
+    }
+    .info-box.demo {
+      background: #fff8e1;
+      border: 1px solid #ffe082;
+      color: #795548;
+    }
+    .info-box.file-stats {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      color: #0369a1;
+    }
+    .info-box.error {
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      color: #be123c;
+    }
 
-    /* ---------- results ---------- */
-    #results { display: none; margin-top: 32px; }
-    .tabs { display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb; margin-bottom: 24px; }
-    .tab { padding: 10px 22px; border: none; background: none; font-size: .9rem; font-weight: 500; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; }
-    .tab.active { color: #0f3460; border-color: #0f3460; background: #eff6ff; }
-    .tab:hover:not(.active) { color: #374151; background: #f9fafb; }
+    /* ── RESULTS ── */
+    #results { display: none; margin-top: 28px; }
 
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 2px solid #ebebeb;
+      margin-bottom: 24px;
+    }
+    .tab {
+      padding: 10px 22px;
+      border: none;
+      background: none;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #717171;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.15s, border-color 0.15s;
+      border-radius: 6px 6px 0 0;
+      font-family: inherit;
+    }
+    .tab.active { color: #FF385C; border-color: #FF385C; }
+    .tab:hover:not(.active) { color: #222222; background: #fafafa; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ---------- BPMN viewer ---------- */
-    .bpmn-toolbar { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
-    .btn-sm { padding: 6px 14px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; font-size: .82rem; font-weight: 500; cursor: pointer; transition: background .15s; color: #374151; }
-    .btn-sm:hover { background: #f3f4f6; }
-    .btn-download { background: #0f3460; color: #fff; border-color: #0f3460; margin-left: auto; }
-    .btn-download:hover { background: #1a5496; }
+    /* ── BPMN VIEWER ── */
+    .bpmn-toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn-sm {
+      padding: 7px 14px;
+      background: #ffffff;
+      border: 1.5px solid #dddddd;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #222222;
+      font-family: inherit;
+    }
+    .btn-sm:hover { background: #f7f7f7; border-color: #bbbbbb; }
+    .btn-dl {
+      background: #222222;
+      color: #ffffff;
+      border-color: #222222;
+      margin-left: auto;
+    }
+    .btn-dl:hover { background: #444444; border-color: #444444; }
 
-    #bpmn-canvas { width: 100%; height: 520px; border: 1.5px solid #e5e7eb; border-radius: 10px; background: #fff; overflow: hidden; }
-    .bpmn-error { padding: 14px 18px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; color: #991b1b; font-size: .85rem; display: none; margin-top: 8px; }
+    #bpmn-canvas {
+      width: 100%;
+      height: 480px;
+      border: 1.5px solid #ebebeb;
+      border-radius: 12px;
+      background: #ffffff;
+      overflow: hidden;
+    }
+    .bpmn-error {
+      display: none;
+      margin-top: 10px;
+      padding: 12px 16px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 10px;
+      color: #be123c;
+      font-size: 0.83rem;
+    }
 
-    /* ---------- Use Case ---------- */
-    .uc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
-    .uc-body { background: #fafafa; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 24px 28px; max-height: 620px; overflow-y: auto; line-height: 1.7; font-size: .92rem; }
-    .uc-body h1 { font-size: 1.3rem; margin-bottom: 4px; color: #111827; }
-    .uc-body h2 { font-size: 1rem; color: #0f3460; margin: 20px 0 8px; }
-    .uc-body h3 { font-size: .92rem; color: #374151; margin: 16px 0 6px; }
-    .uc-body p  { margin-bottom: 8px; }
-    .uc-body table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .85rem; }
-    .uc-body th { background: #1a1a2e; color: #fff; padding: 8px 12px; text-align: left; font-weight: 500; }
-    .uc-body td { padding: 7px 12px; border-bottom: 1px solid #e5e7eb; }
-    .uc-body tr:nth-child(even) td { background: #f9fafb; }
-    .uc-body ul, .uc-body ol { padding-left: 20px; margin-bottom: 8px; }
-    .uc-body strong, .uc-body b { color: #111827; }
-    .uc-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
-    .uc-body code { background: #f3f4f6; padding: 1px 5px; border-radius: 3px; font-size: .85em; }
+    /* ── USE CASE ── */
+    .uc-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .uc-header-title { font-weight: 600; color: #222222; font-size: 0.9rem; }
+    .uc-body {
+      background: #ffffff;
+      border: 1.5px solid #ebebeb;
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-height: 600px;
+      overflow-y: auto;
+      line-height: 1.75;
+      font-size: 0.91rem;
+      color: #222222;
+    }
+    .uc-body h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; color: #222222; }
+    .uc-body h2 { font-size: 0.95rem; font-weight: 700; color: #FF385C; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .uc-body h3 { font-size: 0.9rem; font-weight: 600; color: #222222; margin: 14px 0 6px; }
+    .uc-body p  { margin-bottom: 8px; color: #444444; }
+    .uc-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.84rem; }
+    .uc-body th { background: #222222; color: #ffffff; padding: 10px 14px; text-align: left; font-weight: 500; font-size: 0.82rem; }
+    .uc-body td { padding: 9px 14px; border-bottom: 1px solid #ebebeb; color: #444444; }
+    .uc-body tr:last-child td { border-bottom: none; }
+    .uc-body tr:nth-child(even) td { background: #fafafa; }
+    .uc-body ul, .uc-body ol { padding-left: 22px; margin-bottom: 10px; color: #444444; }
+    .uc-body li { margin-bottom: 4px; }
+    .uc-body strong, .uc-body b { color: #222222; font-weight: 600; }
+    .uc-body hr { border: none; border-top: 1px solid #ebebeb; margin: 20px 0; }
+    .uc-body code { background: #f7f7f7; padding: 2px 6px; border-radius: 4px; font-size: 0.84em; color: #FF385C; }
 
-    /* ---------- error ---------- */
-    #error-box { display: none; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 14px 18px; color: #991b1b; font-size: .9rem; margin-top: 20px; }
+    /* ── DIVIDER ── */
+    .divider { height: 1px; background: #ebebeb; margin: 28px 0; }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #aaaaaa;
+      padding: 32px 0 16px;
+    }
+    .footer span { color: #FF385C; }
   </style>
 </head>
 <body>
 
-<header>
-  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-    <rect width="36" height="36" rx="8" fill="rgba(255,255,255,.15)"/>
-    <path d="M8 18h4m12 0h4M18 8v4m0 12v4" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-    <rect x="13" y="13" width="10" height="10" rx="2" fill="none" stroke="#fff" stroke-width="2"/>
-    <circle cx="8" cy="18" r="2.5" fill="#64b5f6"/>
-    <circle cx="28" cy="18" r="2.5" fill="#64b5f6"/>
-    <circle cx="18" cy="8"  r="2.5" fill="#64b5f6"/>
-    <circle cx="18" cy="28" r="2.5" fill="#64b5f6"/>
-  </svg>
-  <div>
-    <h1>CRM Process Optimizer</h1>
-    <p>Загрузите данные → опишите проблему → получите BPMN-схему и Use Case от AI</p>
-  </div>
+<!-- HEADER -->
+<header class="header">
+  <a class="logo" href="/">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M3 9h12M9 3v12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+        <circle cx="9" cy="9" r="3" fill="none" stroke="#fff" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="logo-text">
+      <span class="logo-name">B<span>A</span>lance.ai</span>
+      <span class="logo-sub">CRM Streamlining & Funnel Architecture</span>
+    </div>
+  </a>
+  <div class="header-badge">Groq · llama-3.1-8b</div>
 </header>
 
+<!-- HERO -->
+<div class="hero">
+  <span class="hero-eyebrow">Senior BA Methodology</span>
+  <h1>Превратите хаос воронки<br/>в системный процесс</h1>
+  <p>Загрузите CRM-данные, опишите узкое место — получите BPMN-схему и Use Case по стандарту Коберна от Senior BA.</p>
+</div>
+
+<!-- MAIN FORM -->
 <div class="container">
   <div class="card">
-    <h2>Входные данные</h2>
+    <div class="card-title">Входные данные</div>
     <div class="form-grid">
-      <!-- File upload -->
       <div>
-        <label>CRM-данные (CSV / Excel)</label>
+        <label class="field-label">CRM-данные <span class="field-hint">(CSV / Excel)</span></label>
         <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
           <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="onFileSelected(this)"/>
-          <div class="icon">📂</div>
-          <div style="margin-top:8px;font-size:.9rem;color:#374151;">Нажмите или перетащите файл</div>
-          <div class="hint">.csv, .xlsx, .xls</div>
-          <div class="filename" id="file-name"></div>
+          <div class="upload-icon">📂</div>
+          <div class="upload-main-text">Нажмите или перетащите файл</div>
+          <div class="upload-hint-text">.csv, .xlsx, .xls — данные не покидают сервер</div>
+          <div class="upload-filename" id="file-name"></div>
         </div>
       </div>
-      <!-- Problem description -->
       <div>
-        <label>Описание проблемы</label>
-        <textarea id="problem" placeholder="Например: Сделки зависают на этапе ТЗ, менеджеры долго отвечают. Конверсия падает, много лидов теряется на этапе квалификации."></textarea>
+        <label class="field-label">Описание проблемы</label>
+        <textarea id="problem" placeholder="Например: Сделки зависают на этапе ТЗ по 10–14 дней. Менеджеры не логируют причины. Конверсия лид → сделка упала с 22% до 11% за квартал."></textarea>
       </div>
     </div>
 
     <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
       <div class="spinner" id="spinner"></div>
-      <span id="btn-label">🚀 Сгенерировать процесс To-Be</span>
+      <span id="btn-label">Сгенерировать процесс To-Be</span>
     </button>
   </div>
 
-  <div id="error-box"></div>
+  <!-- INFO BOXES -->
+  <div class="info-box error" id="error-box"></div>
 
+  <!-- RESULTS -->
   <div id="results">
-    <div class="demo-badge" id="demo-badge"></div>
-    <div id="file-stats-box" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#0369a1;margin-bottom:16px;">
-      <strong>📊 Файл загружен:</strong> <span id="file-stats-text"></span>
+    <div class="info-box demo" id="demo-badge"></div>
+    <div class="info-box file-stats" id="file-stats-box">
+      <strong>📊 Файл проанализирован:</strong> <span id="file-stats-text"></span>
     </div>
 
+    <div class="divider"></div>
+
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('bpmn',this)">📊 Интерактивная BPMN-схема</button>
-      <button class="tab"        onclick="switchTab('uc',this)">📄 Use Cases / ТЗ</button>
+      <button class="tab active" onclick="switchTab('bpmn',this)">📊 BPMN-схема процесса</button>
+      <button class="tab"        onclick="switchTab('uc',this)">📄 Use Case / Артефакт BA</button>
     </div>
 
     <!-- BPMN tab -->
     <div class="tab-panel active" id="tab-bpmn">
       <div class="bpmn-toolbar">
-        <button class="btn-sm" onclick="bpmnZoom(1.2)">＋</button>
-        <button class="btn-sm" onclick="bpmnZoom(0.8)">－</button>
+        <button class="btn-sm" onclick="bpmnZoom(1.2)">+ Увеличить</button>
+        <button class="btn-sm" onclick="bpmnZoom(0.8)">− Уменьшить</button>
         <button class="btn-sm" onclick="bpmnFit()">По размеру</button>
         <button class="btn-sm" onclick="bpmnReset()">1:1</button>
-        <button class="btn-sm btn-download" onclick="downloadBpmn()">⬇ Скачать .bpmn</button>
+        <button class="btn-sm btn-dl" onclick="downloadBpmn()">⬇ Скачать .bpmn</button>
       </div>
       <div id="bpmn-canvas"></div>
       <div class="bpmn-error" id="bpmn-error"></div>
@@ -160,11 +500,15 @@
     <!-- Use Case tab -->
     <div class="tab-panel" id="tab-uc">
       <div class="uc-header">
-        <span style="font-weight:600;color:#374151;">Use Case / Техническое задание</span>
-        <button class="btn-sm btn-download" onclick="downloadUC()">⬇ Скачать .md</button>
+        <span class="uc-header-title">Use Case по методологии Коберна — To-Be артефакт</span>
+        <button class="btn-sm btn-dl" onclick="downloadUC()">⬇ Скачать .md</button>
       </div>
       <div class="uc-body" id="uc-body"></div>
     </div>
+  </div>
+
+  <div class="footer">
+    Powered by <span>BAlance.ai</span> · Groq llama-3.1-8b-instant · Senior BA Methodology
   </div>
 </div>
 
@@ -176,9 +520,9 @@
 <script>
 var _bpmnViewer = null;
 var _bpmnXml    = '';
-var _ucText      = '';
+var _ucText     = '';
 
-/* ---- drag & drop ---- */
+/* ── drag & drop ── */
 var dz = document.getElementById('drop-zone');
 dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('dragover'); });
 dz.addEventListener('dragleave', function(){ dz.classList.remove('dragover'); });
@@ -193,25 +537,27 @@ function onFileSelected(inp){
   document.getElementById('file-name').textContent = n ? '✓ ' + n : '';
 }
 
-/* ---- tabs ---- */
+/* ── tabs ── */
 function switchTab(name, btn){
   document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if(name === 'bpmn' && _bpmnViewer){ setTimeout(function(){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); }, 50); }
+  if(name === 'bpmn' && _bpmnViewer){
+    setTimeout(function(){ _bpmnViewer.get('canvas').zoom('fit-viewport', 'auto'); }, 50);
+  }
 }
 
-/* ---- analyze ---- */
+/* ── analyze ── */
 async function analyze(){
-  var btn = document.getElementById('analyze-btn');
+  var btn     = document.getElementById('analyze-btn');
   var spinner = document.getElementById('spinner');
   var label   = document.getElementById('btn-label');
   var errBox  = document.getElementById('error-box');
 
   btn.disabled = true;
   spinner.style.display = 'block';
-  label.textContent = 'Анализируем…';
+  label.textContent = 'Анализируем данные…';
   errBox.style.display = 'none';
   document.getElementById('results').style.display = 'none';
 
@@ -221,7 +567,7 @@ async function analyze(){
   if(fi.files[0]) fd.append('file', fi.files[0]);
 
   try {
-    var res = await fetch('/analyze', { method: 'POST', body: fd });
+    var res  = await fetch('/analyze', { method: 'POST', body: fd });
     var data = await res.json();
 
     if(!res.ok || data.error){
@@ -233,28 +579,28 @@ async function analyze(){
     _bpmnXml = data.bpmn_xml;
     _ucText  = data.use_case;
 
+    /* demo badge */
     var badge = document.getElementById('demo-badge');
-    if (data.demo) {
+    if(data.demo){
+      badge.textContent = 'ℹ Демо-режим: ' + (data.demo_reason || 'API-ключ не задан') + '. Показан типовой шаблон.';
       badge.style.display = 'block';
-      badge.innerHTML = 'ℹ️ <strong>Демо-режим:</strong> ' + (data.demo_reason || 'API-ключ не задан') +
-        '. Показан типовой шаблон.';
     } else {
       badge.style.display = 'none';
     }
 
+    /* file stats */
     var statsBox = document.getElementById('file-stats-box');
-    if (data.file_stats) {
+    if(data.file_stats){
       var cols = data.file_stats.columns.slice(0, 8).join(', ');
-      if (data.file_stats.columns.length > 8) cols += ' …ещё ' + (data.file_stats.columns.length - 8);
+      if(data.file_stats.columns.length > 8) cols += ' …ещё ' + (data.file_stats.columns.length - 8);
       document.getElementById('file-stats-text').textContent =
-        data.file_stats.rows + ' строк | Колонки: ' + cols;
+        data.file_stats.rows + ' строк · Колонки: ' + cols;
       statsBox.style.display = 'block';
     } else {
       statsBox.style.display = 'none';
     }
 
     document.getElementById('results').style.display = 'block';
-
     renderBpmn(_bpmnXml);
     renderUC(_ucText);
 
@@ -270,20 +616,21 @@ async function analyze(){
   } finally {
     btn.disabled = false;
     spinner.style.display = 'none';
-    label.textContent = '🚀 Сгенерировать процесс To-Be';
+    label.textContent = 'Сгенерировать процесс To-Be';
   }
 }
 
-/* ---- BPMN rendering ---- */
+/* ── BPMN rendering ── */
 function renderBpmn(xml){
   var errDiv = document.getElementById('bpmn-error');
   errDiv.style.display = 'none';
 
-  if(_bpmnViewer){ _bpmnViewer.destroy(); }
+  if(_bpmnViewer){ _bpmnViewer.destroy(); _bpmnViewer = null; }
   _bpmnViewer = new BpmnJS({ container: '#bpmn-canvas' });
 
-  _bpmnViewer.importXML(xml).then(function(){
-    _bpmnViewer.get('canvas').zoom('fit-viewport','auto');
+  _bpmnViewer.importXML(xml).then(function(result){
+    var canvas = _bpmnViewer.get('canvas');
+    canvas.zoom('fit-viewport', 'auto');
   }).catch(function(err){
     errDiv.textContent = 'Ошибка рендеринга BPMN: ' + err.message;
     errDiv.style.display = 'block';
@@ -291,26 +638,26 @@ function renderBpmn(xml){
 }
 
 function bpmnZoom(f){ if(_bpmnViewer){ var c=_bpmnViewer.get('canvas'); c.zoom(c.zoom()*f); } }
-function bpmnFit(){  if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); } }
+function bpmnFit(){   if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); } }
 function bpmnReset(){ if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom(1); } }
 
-/* ---- Use Case rendering ---- */
+/* ── Use Case rendering ── */
 function renderUC(md){
   document.getElementById('uc-body').innerHTML = marked.parse(md || '');
 }
 
-/* ---- downloads ---- */
+/* ── downloads ── */
 function downloadBpmn(){
   if(!_bpmnXml) return;
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([_bpmnXml], {type:'application/xml'}));
-  a.download = 'crm_to_be.bpmn'; a.click();
+  a.download = 'balance_ai_to_be.bpmn'; a.click();
 }
 function downloadUC(){
   if(!_ucText) return;
   var a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([_ucText], {type:'text/markdown'}));
-  a.download = 'crm_use_case.md'; a.click();
+  a.download = 'balance_ai_use_case.md'; a.click();
 }
 </script>
 </body>
