@@ -224,11 +224,26 @@ def _build_prompt(df, problem: str) -> str:
     return f"Проблема: {prob}."
 
 
+def clean_bpmn_xml(text: str) -> str:
+    """Strip everything outside the BPMN XML tags from a raw string."""
+    # Step 1: pull out ```xml ... ``` block if still present
+    match = re.search(r"```xml\s*([\s\S]+?)```", text, re.IGNORECASE)
+    if match:
+        text = match.group(1).strip()
+    # Step 2: if the text contains a definitions tag, slice from first < to last >
+    if "definitions" in text:
+        start = text.find("<")
+        end = text.rfind(">") + 1
+        if start != -1 and end > start:
+            return text[start:end].strip()
+    return text.strip()
+
+
 def _parse_ai_response(text: str):
     """Extract (bpmn_xml, use_case) from a free-text AI response containing a ```xml block."""
     match = re.search(r"```xml\s*([\s\S]+?)```", text, re.IGNORECASE)
     if match:
-        bpmn_xml = match.group(1).strip()
+        bpmn_xml = clean_bpmn_xml(match.group(1))
         use_case = text[: match.start()].strip()
     else:
         bpmn_xml = ""
