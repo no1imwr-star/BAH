@@ -3,6 +3,7 @@ modules = ["nodejs-24", "python-3.11"]
 [deployment]
 router = "application"
 deploymentTarget = "autoscale"
+run = ["streamlit", "run", "app.py", "--server.port", "5000"]
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]
@@ -29,11 +30,11 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/crm-optimizer && python main.py"
+args = "python main.py"
 waitForPort = 5000
 
 [agent]
-stack = "PNPM_WORKSPACE"
+stack = "STREAMLIT"
 expertMode = true
 
 [postMerge]
@@ -42,11 +43,7 @@ timeoutMs = 20000
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 8080
-externalPort = 8080
+externalPort = 80
 
 [[ports]]
 localPort = 8081
