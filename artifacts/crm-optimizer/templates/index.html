@@ -456,8 +456,9 @@
         </div>
       </div>
       <div>
-        <label class="field-label">Описание проблемы</label>
-        <textarea id="problem" placeholder="Например: Сделки зависают на этапе ТЗ по 10–14 дней. Менеджеры не логируют причины. Конверсия лид → сделка упала с 22% до 11% за квартал."></textarea>
+        <label class="field-label">Описание проблемы <span class="field-hint">(необязательно — обнаружим автоматически)</span></label>
+        <textarea id="problem" placeholder="Необязательно: если загружен файл, проблема определяется автоматически. Можно добавить контекст вручную — например, «Менеджеры игнорируют SLA» или «Нет интеграции с телефонией»."></textarea>
+        <div style="font-size:0.75rem;color:#717171;margin-top:6px;">💡 Без файла — опишите проблему текстом. С файлом — поле не обязательно.</div>
       </div>
     </div>
 
@@ -474,7 +475,10 @@
   <div id="results">
     <div class="info-box demo" id="demo-badge"></div>
     <div class="info-box file-stats" id="file-stats-box">
-      <strong>📊 Файл проанализирован:</strong> <span id="file-stats-text"></span>
+      <span id="file-stats-text"></span>
+    </div>
+    <div class="info-box auto-problem" id="auto-problem-box" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:12px 18px;font-size:0.84rem;margin-top:8px;">
+      <strong>🤖 Выявленная проблема (Data Mining):</strong> <span id="auto-problem-text"></span>
     </div>
 
     <div class="divider"></div>
@@ -588,16 +592,38 @@ async function analyze(){
       badge.style.display = 'none';
     }
 
-    /* file stats */
+    /* file stats + mining insights */
     var statsBox = document.getElementById('file-stats-box');
     if(data.file_stats){
-      var cols = data.file_stats.columns.slice(0, 8).join(', ');
-      if(data.file_stats.columns.length > 8) cols += ' …ещё ' + (data.file_stats.columns.length - 8);
-      document.getElementById('file-stats-text').textContent =
-        data.file_stats.rows + ' строк · Колонки: ' + cols;
+      var fs = data.file_stats;
+      var cols = fs.columns.slice(0, 6).join(', ');
+      if(fs.columns.length > 6) cols += ' +' + (fs.columns.length - 6) + ' ещё';
+
+      var insightParts = ['<strong>📊 Автоматический анализ данных:</strong><br/>'];
+      insightParts.push('<span style="color:#0369a1">' + fs.rows + ' строк · Колонки: ' + cols + '</span>');
+
+      if(fs.conversion !== null && fs.conversion !== undefined)
+        insightParts.push('&nbsp;·&nbsp;🎯 Конверсия: <strong>' + fs.conversion + '%</strong>');
+      if(fs.bottleneck_stage && fs.max_days !== null)
+        insightParts.push('&nbsp;·&nbsp;⚠ Бутылочное горлышко: <strong>' + fs.bottleneck_stage + '</strong> (' + fs.max_days + ' дней)');
+      else if(fs.max_days !== null)
+        insightParts.push('&nbsp;·&nbsp;⏱ Среднее время: <strong>' + fs.max_days + ' дней</strong>');
+      if(fs.top_reason)
+        insightParts.push('&nbsp;·&nbsp;❌ Топ причина отказа: <strong>' + fs.top_reason + '</strong>');
+
+      document.getElementById('file-stats-text').innerHTML = insightParts.join('');
       statsBox.style.display = 'block';
     } else {
       statsBox.style.display = 'none';
+    }
+
+    /* auto_problem hint */
+    var apBox = document.getElementById('auto-problem-box');
+    if(data.auto_problem){
+      document.getElementById('auto-problem-text').textContent = data.auto_problem;
+      apBox.style.display = 'block';
+    } else {
+      apBox.style.display = 'none';
     }
 
     document.getElementById('results').style.display = 'block';

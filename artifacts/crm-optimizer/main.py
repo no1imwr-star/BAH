@@ -42,11 +42,108 @@ def get_ai_client():
 
 
 # ---------------------------------------------------------------------------
-# BPMN XML template — stable, 100% renders in bpmn-js with all edges
+# DATA MINING — automatic funnel analysis from the uploaded dataframe
+# ---------------------------------------------------------------------------
+def mine_dataframe(df: pd.DataFrame) -> dict:
+    """
+    Extract key funnel metrics from a CRM dataframe.
+    Returns a dict with: conversion, bottleneck_stage, max_days, top_reason,
+    auto_problem (summary string), and column_names.
+    """
+    cols_lower = {c: c.lower() for c in df.columns}
+
+    result = {
+        "conversion": None,
+        "bottleneck_stage": None,
+        "max_days": None,
+        "top_reason": None,
+        "auto_problem": None,
+        "column_names": list(df.columns),
+        "total_rows": len(df),
+    }
+
+    # --- Stage / status column ---
+    stage_col = next(
+        (c for c in df.columns if any(k in cols_lower[c] for k in
+         ["stage", "стадия", "статус", "status", "этап", "phase"])),
+        None,
+    )
+    if stage_col:
+        total = len(df)
+        won_keywords = ["closed won", "выиграна", "won", "закрыта", "closed", "выигран"]
+        won_mask = df[stage_col].astype(str).str.lower().str.strip().isin(won_keywords)
+        conversion = round(won_mask.sum() / total * 100, 1) if total > 0 else 0
+        result["conversion"] = conversion
+
+    # --- Days-in-stage column ---
+    days_col = next(
+        (c for c in df.columns if any(k in cols_lower[c] for k in
+         ["days", "дни", "день", "duration", "time_in", "days_in"])),
+        None,
+    )
+    if days_col and stage_col:
+        try:
+            df_copy = df[[stage_col, days_col]].copy()
+            df_copy[days_col] = pd.to_numeric(df_copy[days_col], errors="coerce")
+            avg_by_stage = df_copy.groupby(stage_col)[days_col].mean().dropna()
+            if not avg_by_stage.empty:
+                bottleneck_stage = avg_by_stage.idxmax()
+                max_days = round(avg_by_stage.max(), 1)
+                result["bottleneck_stage"] = str(bottleneck_stage)
+                result["max_days"] = max_days
+        except Exception:
+            pass
+    elif days_col:
+        try:
+            df[days_col] = pd.to_numeric(df[days_col], errors="coerce")
+            result["max_days"] = round(df[days_col].mean(), 1)
+        except Exception:
+            pass
+
+    # --- Rejection reason column ---
+    reason_col = next(
+        (c for c in df.columns if any(k in cols_lower[c] for k in
+         ["reason", "причина", "lost_reason", "loss_reason", "rejection", "отказ"])),
+        None,
+    )
+    if reason_col:
+        try:
+            counts = df[reason_col].dropna().astype(str).str.strip()
+            counts = counts[counts != ""]
+            if not counts.empty:
+                result["top_reason"] = counts.value_counts().idxmax()
+        except Exception:
+            pass
+
+    # --- Build auto_problem summary ---
+    parts = []
+    if result["conversion"] is not None:
+        parts.append(f"Конверсия воронки составляет {result['conversion']}%")
+    if result["bottleneck_stage"] and result["max_days"] is not None:
+        parts.append(
+            f"главное узкое место — этап '{result['bottleneck_stage']}', "
+            f"где сделки зависают в среднем на {result['max_days']} дней"
+        )
+    elif result["max_days"] is not None:
+        parts.append(f"среднее время сделки составляет {result['max_days']} дней")
+    if result["top_reason"]:
+        parts.append(f"основная причина отказов — «{result['top_reason']}»")
+
+    if parts:
+        result["auto_problem"] = ". ".join(p.capitalize() for p in parts) + "."
+
+    return result
+
+
+# ---------------------------------------------------------------------------
+# BPMN XML template — stable, always renders in bpmn-js with all edges
 # ---------------------------------------------------------------------------
 def build_bpmn_xml(step1: str, step2: str) -> str:
-    s1 = step1.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-    s2 = step2.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    def esc(s):
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+    s1 = esc(step1)
+    s2 = esc(step2)
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
@@ -185,13 +282,13 @@ def build_bpmn_xml(step1: str, step2: str) -> str:
 # ---------------------------------------------------------------------------
 MOCK_USE_CASE = """# UC-01: Оптимизация конверсии на этапе Квалификации
 
-**Дата:** {date} | **Статус:** Демо-режим | **Автор:** BAlance.ai
+**Дата:** {date} | **Статус:** Демо-режим | **Источник:** BAlance.ai
 
 ---
 
 ## Контекст / Цель
 
-Выявление коренных причин (Root Cause Analysis) потери сделок на ранних этапах и предиктивное управление воронкой. Цель — снизить долю зависших сделок на этапе квалификации и автоматизировать эскалацию.
+Выявление коренных причин (Root Cause Analysis) потери сделок на ранних этапах и предиктивное управление воронкой. Цель — снизить долю зависших сделок и автоматизировать эскалацию.
 
 ## Главный Актор
 
@@ -210,10 +307,10 @@ MOCK_USE_CASE = """# UC-01: Оптимизация конверсии на эт�
 | Шаг | Актор | Действие | Результат |
 |-----|-------|----------|-----------|
 | 1 | Система | Считывает логи изменения статусов сделки из БД | Получен журнал активности |
-| 2 | Система | Автоматически вычисляет метрику Days_In_Stage и сравнивает с SLA этапа | Выявлено превышение лимита |
+| 2 | Система | Вычисляет метрику Days_In_Stage и сравнивает с SLA этапа | Выявлено превышение лимита |
 | 3 | Система | Инициирует скрипт валидации причин потери (Lost Reason) | Запрос отправлен менеджеру |
 | 4 | Менеджер | Выбирает формализованную причину из динамического справочника CRM | Причина зафиксирована |
-| 5 | Система | Логирует изменения, пересчитывает конверсию воронки, отправляет событие в модуль аналитики | Данные актуализированы |
+| 5 | Система | Логирует изменения, пересчитывает конверсию, отправляет событие в аналитику | Данные актуализированы |
 
 ## Расширения и альтернативные сценарии
 
@@ -231,7 +328,7 @@ MOCK_USE_CASE = """# UC-01: Оптимизация конверсии на эт�
 
 ---
 
-## Бизнес-правила
+## Бизнес-правила (SLA)
 
 | Код | Правило |
 |-----|---------|
@@ -251,40 +348,42 @@ MOCK_USE_CASE = """# UC-01: Оптимизация конверсии на эт�
 """
 
 # ---------------------------------------------------------------------------
-# System prompt — Senior BA / Cockburn methodology
+# System prompt — Senior BA, Cockburn, data-driven
 # ---------------------------------------------------------------------------
-_SYSTEM = """Ты Senior Business Analyst с 15-летним опытом в CRM-трансформациях. Твой стиль: системное мышление, Root Cause Analysis, методология Алистера Коберна.
+_SYSTEM = """Ты — Senior Business Analyst с 15-летним опытом CRM-трансформаций. Стиль: системное мышление, Root Cause Analysis, методология Коберна.
 
-Пользователь описывает проблему в CRM-процессе. Твоя задача — создать два артефакта.
+Тебе передан автоматический отчёт математического анализа воронки продаж. На его основе сгенерируй профессиональное ТЗ и Use Case по стандарту Коберна на русском языке.
 
-Ответ строго в формате (три части, разделённые символом '|'):
+Ответ строго в формате — три части, разделённые символом '|':
 
 Название шага 1 (2-4 слова) | Название шага 2 (2-4 слова) | Use Case
 
-Use Case пиши на русском языке строго по следующей структуре Markdown:
+Шаги должны отражать конкретный найденный бутылочный этап и автоматизацию его решения.
 
-# UC-[N]: [Динамическое название на основе этапа воронки из данных]
+Use Case пиши строго по этой Markdown-структуре:
+
+# UC-[N]: [Название, динамически отражающее найденный бутылочный этап воронки]
 
 **Дата:** [сегодня] | **Источник:** BAlance.ai
 
 ## Контекст / Цель
-[Root Cause Analysis проблемы. Что конкретно ломается в воронке и почему.]
+[Root Cause Analysis — почему именно этот этап является узким местом, опираясь на переданные цифры]
 
 ## Главный Актор
 [Системный триггер / роль менеджера]
 
 ## Предусловия
-- [условие 1]
-- [условие 2]
+- [условие связанное с найденным этапом]
+- [условие связанное с Days_In_Stage или конверсией]
 
 ## Основной сценарий (Системные шаги)
 
 | Шаг | Актор | Действие | Результат |
 |-----|-------|----------|-----------|
-| 1 | Система | [автоматическое системное действие] | [результат] |
-| 2 | Система | [вычисление метрики Days_In_Stage или аналог] | [результат] |
-| 3 | Система | [инициация скрипта валидации или триггера] | [результат] |
-| 4 | Менеджер | [формализованное действие в CRM] | [результат] |
+| 1 | Система | [считывает логи / данные из БД] | [результат] |
+| 2 | Система | [вычисляет Days_In_Stage для найденного бутылочного этапа] | [результат] |
+| 3 | Система | [инициирует скрипт валидации или триггер автоматизации] | [результат] |
+| 4 | Менеджер | [формализованное действие на основе найденной причины отказов] | [результат] |
 | 5 | Система | [логирование, пересчёт конверсии, событие в аналитику] | [результат] |
 
 ## Расширения и альтернативные сценарии
@@ -292,67 +391,62 @@ Use Case пиши на русском языке строго по следую�
 
 ## Постусловия
 - Статус сделки обновлён в БД
-- В CRM сгенерирована предиктивная задача
-- [ещё одно постусловие]
+- В CRM сгенерирована предиктивная задача на удержание клиента
+- [ещё одно постусловие, специфичное для найденной проблемы]
 
 ## Бизнес-правила (SLA)
 | Код | Правило |
 |-----|---------|
-| BR-01 | [правило с конкретными цифрами] |
-| BR-02 | [правило] |
-| BR-03 | [правило] |
+| BR-01 | [правило с конкретными цифрами из данных] |
+| BR-02 | [правило о Days_In_Stage] |
+| BR-03 | [правило о причинах отказов] |
 
 ## Метрики успеха (KPI)
 | Метрика | As-Is | To-Be |
 |---------|-------|-------|
-| [метрика] | [текущее] | [целевое] |
-| [метрика] | [текущее] | [целевое] |
-| [метрика] | [текущее] | [целевое] |
+| Конверсия воронки | [из данных]% | [улучшенный таргет]% |
+| Days_In_Stage (узкое место) | [из данных] дней | [сокращённый таргет] дней |
+| [ещё метрика] | [текущее] | [целевое] |
 
-ВАЖНО: Ровно два символа '|' разделяют три части ответа. Никаких пояснений до первого '|' и после Use Case."""
+ВАЖНО: Ровно два символа '|' делят ответ на три части. Никаких пояснений вне структуры."""
 
 
-def _build_prompt(df, problem: str) -> str:
-    prob = problem.strip() or "Оптимизируй типовой процесс квалификации лидов в CRM."
+def _build_prompt(auto_problem: str, user_problem: str, columns: list, total_rows: int) -> str:
     today = datetime.now().strftime("%d.%m.%Y")
-    if df is not None:
-        columns_str = ", ".join(list(df.columns)[:20])
-        total_rows = len(df)
-        stage_col = next(
-            (c for c in df.columns if any(k in c.lower() for k in ["stage", "статус", "status", "этап", "phase"])),
-            None,
-        )
-        funnel = ""
-        if stage_col:
-            unique_stages = ", ".join(str(v) for v in df[stage_col].dropna().unique()[:10])
-            funnel = f" Этапы воронки ({stage_col}): {unique_stages}."
-        return f"Сегодня: {today}. Проблема: {prob}. Колонки CRM: {columns_str}. Строк: {total_rows}.{funnel}"
-    return f"Сегодня: {today}. Проблема: {prob}."
+    cols_str = ", ".join(columns[:20])
+
+    combined = auto_problem or ""
+    if user_problem.strip():
+        combined = (combined + " Дополнение от пользователя: " + user_problem.strip()).strip()
+    if not combined:
+        combined = "Оптимизируй типовой процесс квалификации лидов в CRM."
+
+    return (
+        f"Сегодня: {today}. "
+        f"Автоматический анализ воронки: {combined} "
+        f"Структура датасета: {total_rows} строк, колонки: {cols_str}."
+    )
 
 
 def _parse_pipe_response(text: str):
     parts = text.split("|", 2)
     if len(parts) >= 3:
-        step1 = parts[0].strip()[:60]
-        step2 = parts[1].strip()[:60]
-        use_case = parts[2].strip()
-        return step1, step2, use_case
-    elif len(parts) == 2:
-        step1 = parts[0].strip()[:60]
-        step2 = parts[1].strip()[:60]
-        return step1, step2, ""
+        return parts[0].strip()[:60], parts[1].strip()[:60], parts[2].strip()
+    if len(parts) == 2:
+        return parts[0].strip()[:60], parts[1].strip()[:60], ""
     return "Квалификация лида", "Автоматизация CRM", text.strip()
 
 
-def _call_ai(df, problem: str):
+def _call_ai(auto_problem: str, user_problem: str, columns: list, total_rows: int):
     client, model = get_ai_client()
     if client is None:
         return None, None
+    prompt = _build_prompt(auto_problem, user_problem, columns, total_rows)
     resp = client.chat.completions.create(
         model=model,
         messages=[
             {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": _build_prompt(df, problem)},
+            {"role": "user",   "content": prompt},
         ],
         temperature=0.4,
         max_tokens=2000,
@@ -398,10 +492,33 @@ async def analyze(
                 status_code=400,
             )
 
+    # Guard: require at least a file or a problem description
+    if df is None and not problem.strip():
+        return JSONResponse(
+            {"error": "Загрузите файл CRM-данных или введите описание проблемы."},
+            status_code=400,
+        )
+
+    # ── Data Mining ──
+    mining = {}
+    auto_problem = ""
     file_stats = None
     if df is not None:
-        file_stats = {"rows": len(df), "columns": list(df.columns)}
+        mining = mine_dataframe(df)
+        auto_problem = mining.get("auto_problem") or ""
+        file_stats = {
+            "rows": mining["total_rows"],
+            "columns": mining["column_names"],
+            "conversion": mining["conversion"],
+            "bottleneck_stage": mining["bottleneck_stage"],
+            "max_days": mining["max_days"],
+            "top_reason": mining["top_reason"],
+        }
 
+    columns = mining.get("column_names", [])
+    total_rows = mining.get("total_rows", 0)
+
+    # ── AI call ──
     client, model = get_ai_client()
     if client is None:
         bpmn_xml = build_bpmn_xml("Квалификация лида", "Автоматизация CRM")
@@ -410,7 +527,7 @@ async def analyze(
         demo_reason = "GROQ_API_KEY не задан — активирован демо-режим"
     else:
         try:
-            bpmn_xml, use_case = _call_ai(df, problem)
+            bpmn_xml, use_case = _call_ai(auto_problem, problem, columns, total_rows)
             if not bpmn_xml:
                 bpmn_xml = build_bpmn_xml("Квалификация лида", "Автоматизация CRM")
                 use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
@@ -426,11 +543,12 @@ async def analyze(
             demo_reason = f"Ошибка запроса к AI: {e}"
 
     return JSONResponse({
-        "bpmn_xml": bpmn_xml,
-        "use_case": use_case,
-        "demo": is_demo,
+        "bpmn_xml":   bpmn_xml,
+        "use_case":   use_case,
+        "demo":       is_demo,
         "demo_reason": demo_reason,
         "file_stats": file_stats,
+        "auto_problem": auto_problem or None,
     })
 
 
