@@ -17,7 +17,7 @@ try:
 except Exception:
     _OPENAI_LIB = False
 
-# (model_name, client_or_None)
+
 def get_ai_client():
     if not _OPENAI_LIB:
         return None, None
@@ -42,9 +42,10 @@ def get_ai_client():
 
 
 # ---------------------------------------------------------------------------
-# Demo assets
+# BPMN XML template — stable, always renders in bpmn-js
 # ---------------------------------------------------------------------------
-MOCK_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
+def build_bpmn_xml(step1: str, step2: str, step3: str = "Закрыть сделку") -> str:
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
              xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
              xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
@@ -56,24 +57,22 @@ MOCK_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
   </collaboration>
   <process id="Process_Manager" isExecutable="false">
     <startEvent id="SE1" name="Новая заявка"><outgoing>F1</outgoing></startEvent>
-    <userTask   id="T1"  name="Квалификация лида"><incoming>F1</incoming><outgoing>F2</outgoing></userTask>
+    <userTask   id="T1"  name="{step1}"><incoming>F1</incoming><outgoing>F2</outgoing></userTask>
     <exclusiveGateway id="GW1" name="Квалифицирован?"><incoming>F2</incoming><outgoing>F3</outgoing><outgoing>F4</outgoing></exclusiveGateway>
-    <userTask   id="T2"  name="Подготовить ТЗ"><incoming>F3</incoming><outgoing>F5</outgoing></userTask>
-    <userTask   id="T3"  name="Презентация решения"><incoming>F5</incoming><outgoing>F6</outgoing></userTask>
-    <userTask   id="T4"  name="Согласование КП"><incoming>F6</incoming><outgoing>F7</outgoing></userTask>
-    <exclusiveGateway id="GW2" name="Сделка закрыта?"><incoming>F7</incoming><outgoing>F8</outgoing><outgoing>F9</outgoing></exclusiveGateway>
-    <endEvent   id="EE1" name="Выиграна"><incoming>F8</incoming></endEvent>
-    <endEvent   id="EE2" name="Проиграна"><incoming>F4</incoming></endEvent>
-    <endEvent   id="EE3" name="Дозревание"><incoming>F9</incoming></endEvent>
+    <userTask   id="T2"  name="{step2}"><incoming>F3</incoming><outgoing>F5</outgoing></userTask>
+    <userTask   id="T3"  name="{step3}"><incoming>F5</incoming><outgoing>F6</outgoing></userTask>
+    <exclusiveGateway id="GW2" name="Сделка закрыта?"><incoming>F6</incoming><outgoing>F7</outgoing><outgoing>F8</outgoing></exclusiveGateway>
+    <endEvent   id="EE1" name="Выиграна"><incoming>F7</incoming></endEvent>
+    <endEvent   id="EE2" name="Не квалифицирован"><incoming>F4</incoming></endEvent>
+    <endEvent   id="EE3" name="Дозревание"><incoming>F8</incoming></endEvent>
     <sequenceFlow id="F1" sourceRef="SE1"  targetRef="T1"/>
     <sequenceFlow id="F2" sourceRef="T1"   targetRef="GW1"/>
     <sequenceFlow id="F3" name="Да"  sourceRef="GW1" targetRef="T2"/>
     <sequenceFlow id="F4" name="Нет" sourceRef="GW1" targetRef="EE2"/>
     <sequenceFlow id="F5" sourceRef="T2"   targetRef="T3"/>
-    <sequenceFlow id="F6" sourceRef="T3"   targetRef="T4"/>
-    <sequenceFlow id="F7" sourceRef="T4"   targetRef="GW2"/>
-    <sequenceFlow id="F8" name="Да"  sourceRef="GW2" targetRef="EE1"/>
-    <sequenceFlow id="F9" name="Нет" sourceRef="GW2" targetRef="EE3"/>
+    <sequenceFlow id="F6" sourceRef="T3"   targetRef="GW2"/>
+    <sequenceFlow id="F7" name="Да"  sourceRef="GW2" targetRef="EE1"/>
+    <sequenceFlow id="F8" name="Нет" sourceRef="GW2" targetRef="EE3"/>
   </process>
   <process id="Process_CRM" isExecutable="false">
     <startEvent  id="CS1" name="Регистрация заявки"><outgoing>CF1</outgoing></startEvent>
@@ -91,29 +90,27 @@ MOCK_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1">
       <bpmndi:BPMNShape id="Pool_Manager_di" bpmnElement="Pool_Manager" isHorizontal="true">
-        <dc:Bounds x="130" y="60" width="950" height="200"/>
+        <dc:Bounds x="130" y="60" width="1000" height="200"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="SE1_di"  bpmnElement="SE1"><dc:Bounds x="182" y="142" width="36" height="36"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="T1_di"   bpmnElement="T1"><dc:Bounds x="268" y="120" width="100" height="80"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="GW1_di"  bpmnElement="GW1" isMarkerVisible="true"><dc:Bounds x="418" y="135" width="50" height="50"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="T2_di"   bpmnElement="T2"><dc:Bounds x="518" y="120" width="100" height="80"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="T3_di"   bpmnElement="T3"><dc:Bounds x="668" y="120" width="100" height="80"/></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="T4_di"   bpmnElement="T4"><dc:Bounds x="818" y="120" width="100" height="80"/></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="GW2_di"  bpmnElement="GW2" isMarkerVisible="true"><dc:Bounds x="968" y="135" width="50" height="50"/></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EE1_di"  bpmnElement="EE1"><dc:Bounds x="1040" y="142" width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW2_di"  bpmnElement="GW2" isMarkerVisible="true"><dc:Bounds x="818" y="135" width="50" height="50"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EE1_di"  bpmnElement="EE1"><dc:Bounds x="920" y="142" width="36" height="36"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EE2_di"  bpmnElement="EE2"><dc:Bounds x="425" y="72"  width="36" height="36"/></bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EE3_di"  bpmnElement="EE3"><dc:Bounds x="975" y="72"  width="36" height="36"/></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EE3_di"  bpmnElement="EE3"><dc:Bounds x="825" y="72"  width="36" height="36"/></bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="F1_di"  bpmnElement="F1"><di:waypoint x="218" y="160"/><di:waypoint x="268" y="160"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F2_di"  bpmnElement="F2"><di:waypoint x="368" y="160"/><di:waypoint x="418" y="160"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F3_di"  bpmnElement="F3"><di:waypoint x="468" y="160"/><di:waypoint x="518" y="160"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F4_di"  bpmnElement="F4"><di:waypoint x="443" y="135"/><di:waypoint x="443" y="108"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F5_di"  bpmnElement="F5"><di:waypoint x="618" y="160"/><di:waypoint x="668" y="160"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="F6_di"  bpmnElement="F6"><di:waypoint x="768" y="160"/><di:waypoint x="818" y="160"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F7_di"  bpmnElement="F7"><di:waypoint x="918" y="160"/><di:waypoint x="968" y="160"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F8_di"  bpmnElement="F8"><di:waypoint x="1018" y="160"/><di:waypoint x="1040" y="160"/></bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="F9_di"  bpmnElement="F9"><di:waypoint x="993" y="135"/><di:waypoint x="993" y="108"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F7_di"  bpmnElement="F7"><di:waypoint x="868" y="160"/><di:waypoint x="920" y="160"/></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F8_di"  bpmnElement="F8"><di:waypoint x="843" y="135"/><di:waypoint x="843" y="108"/></bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Pool_CRM_di" bpmnElement="Pool_CRM" isHorizontal="true">
-        <dc:Bounds x="130" y="290" width="950" height="180"/>
+        <dc:Bounds x="130" y="290" width="1000" height="180"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CS1_di" bpmnElement="CS1"><dc:Bounds x="182" y="362" width="36" height="36"/></bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="CT1_di" bpmnElement="CT1"><dc:Bounds x="268" y="340" width="100" height="80"/></bpmndi:BPMNShape>
@@ -130,6 +127,10 @@ MOCK_BPMN = """<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </definitions>"""
 
+
+# ---------------------------------------------------------------------------
+# Demo assets
+# ---------------------------------------------------------------------------
 MOCK_USE_CASE = """# Use Case: Оптимизированный процесс CRM (To-Be)
 
 **Дата:** {date} | **Статус:** Демо-режим
@@ -190,27 +191,25 @@ MOCK_USE_CASE = """# Use Case: Оптимизированный процесс C
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
-_SYSTEM = """Ты профессиональный бизнес-аналитик CRM. Сгенерируй для пользователя два артефакта на основе его проблемы:
+_SYSTEM = """Ты профессиональный бизнес-аналитик CRM. Пользователь опишет проблему в CRM-процессе.
 
-А) Детальное ТЗ и Use Case по стандарту Коберна на русском языке. Уложись в 400 слов. Пиши кратко и по делу.
+Твой ответ должен быть строго в следующем формате — три части, разделённые символом '|':
 
-Б) Валидный, синтаксически корректный BPMN 2.0 XML код процесса To-Be. Код должен строго начинаться с тега <?xml version="1.0" encoding="UTF-8"?> и содержать все необходимые элементы (definitions, process, bpmndi:BPMNDiagram, bpmndi:BPMNPlane, bpmndi:BPMNShape) со стандартными координатами, чтобы библиотека bpmn-js могла отрисовать схему без ошибок.
+Название шага 1 (2-3 слова) | Название шага 2 (2-3 слова) | Подробный Use Case по стандарту Коберна на русском языке (400 слов)
 
-Формат ответа строго такой:
-1. Сначала текст Use Case (markdown).
-2. Затем BPMN XML внутри блока кода:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-...
-```
+Пример:
+Квалификация лида | Подготовить КП | # Use Case: ...
 
-ВАЖНО: никакого JSON, никаких пояснений после XML блока."""
+ВАЖНО:
+- Никаких дополнительных пояснений до или после
+- Ровно один символ '|' между шагом 1 и шагом 2, и ещё один '|' между шагом 2 и текстом Use Case
+- Use Case пиши в формате Markdown"""
 
 
 def _build_prompt(df, problem: str) -> str:
     prob = problem.strip() or "Создай типовой оптимизированный процесс для CRM."
     if df is not None:
-        columns_str = ", ".join(list(df.columns))
+        columns_str = ", ".join(list(df.columns)[:20])
         total_rows = len(df)
         stage_col = next(
             (c for c in df.columns if "stage" in c.lower() or "статус" in c.lower()),
@@ -220,49 +219,42 @@ def _build_prompt(df, problem: str) -> str:
         if stage_col:
             unique_stages = ", ".join(str(v) for v in df[stage_col].dropna().unique()[:10])
             funnel = f" Этапы воронки ({stage_col}): {unique_stages}."
-        return f"Проблема: {prob}. Колонки: {columns_str}. Строк в файле: {total_rows}.{funnel}"
+        return f"Проблема: {prob}. Колонки CRM: {columns_str}. Строк: {total_rows}.{funnel}"
     return f"Проблема: {prob}."
 
 
-def clean_bpmn_xml(text: str) -> str:
-    """Strip everything outside the BPMN XML tags from a raw string."""
-    # Step 1: pull out ```xml ... ``` block if still present
-    match = re.search(r"```xml\s*([\s\S]+?)```", text, re.IGNORECASE)
-    if match:
-        text = match.group(1).strip()
-    # Step 2: if the text contains a definitions tag, slice from first < to last >
-    if "definitions" in text:
-        start = text.find("<")
-        end = text.rfind(">") + 1
-        if start != -1 and end > start:
-            return text[start:end].strip()
-    return text.strip()
-
-
-def _parse_ai_response(text: str):
-    """Extract (bpmn_xml, use_case) from a free-text AI response containing a ```xml block."""
-    match = re.search(r"```xml\s*([\s\S]+?)```", text, re.IGNORECASE)
-    if match:
-        bpmn_xml = clean_bpmn_xml(match.group(1))
-        use_case = text[: match.start()].strip()
-    else:
-        bpmn_xml = ""
-        use_case = text.strip()
-    return bpmn_xml, use_case
+def _parse_pipe_response(text: str):
+    """Parse pipe-separated response: step1 | step2 | use_case_text"""
+    parts = text.split("|", 2)
+    if len(parts) >= 3:
+        step1 = parts[0].strip()[:50]
+        step2 = parts[1].strip()[:50]
+        use_case = parts[2].strip()
+        return step1, step2, use_case
+    elif len(parts) == 2:
+        step1 = parts[0].strip()[:50]
+        step2 = parts[1].strip()[:50]
+        return step1, step2, ""
+    return "Квалификация лида", "Подготовить КП", text.strip()
 
 
 def _call_ai(df, problem: str):
     client, model = get_ai_client()
     if client is None:
-        return None, None
+        return None, None, None
     resp = client.chat.completions.create(
         model=model,
-        messages=[{"role": "system", "content": _SYSTEM}, {"role": "user", "content": _build_prompt(df, problem)}],
+        messages=[
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": _build_prompt(df, problem)},
+        ],
         temperature=0.3,
-        max_tokens=3000,
+        max_tokens=2000,
     )
     ai_response = str(resp.choices[0].message.content)
-    return _parse_ai_response(ai_response)
+    step1, step2, use_case = _parse_pipe_response(ai_response)
+    bpmn_xml = build_bpmn_xml(step1, step2)
+    return bpmn_xml, use_case, model
 
 
 # ---------------------------------------------------------------------------
@@ -302,31 +294,48 @@ async def analyze(
                 )
         else:
             return JSONResponse(
-                {"error": "Неверный формат файла. Поддерживаются только файлы .csv, .xls, .xlsx."},
+                {"error": "Неверный формат файла. Поддерживаются только .csv, .xls, .xlsx."},
                 status_code=400,
             )
 
+    # File stats for the response
+    file_stats = None
+    if df is not None:
+        file_stats = {
+            "rows": len(df),
+            "columns": list(df.columns),
+        }
+
     client, model = get_ai_client()
     if client is None:
-        bpmn_xml = MOCK_BPMN
+        bpmn_xml = build_bpmn_xml("Квалификация лида", "Подготовить КП")
         use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
         is_demo = True
-        demo_reason = "GROQ_API_KEY и OPENAI_API_KEY не заданы"
+        demo_reason = "GROQ_API_KEY не задан — включён демо-режим"
     else:
         try:
-            bpmn_xml, use_case = _call_ai(df, problem)
+            bpmn_xml, use_case, model_used = _call_ai(df, problem)
             if not bpmn_xml:
-                return JSONResponse({"error": "AI не вернул BPMN XML. Попробуйте ещё раз."}, status_code=500)
-            is_demo = False
-            demo_reason = None
+                bpmn_xml = build_bpmn_xml("Квалификация лида", "Подготовить КП")
+                use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
+                is_demo = True
+                demo_reason = "AI вернул пустой ответ — показан шаблон"
+            else:
+                is_demo = False
+                demo_reason = None
         except Exception as e:
-            # Graceful fallback to demo on any AI error
-            bpmn_xml = MOCK_BPMN
+            bpmn_xml = build_bpmn_xml("Квалификация лида", "Подготовить КП")
             use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
             is_demo = True
-            demo_reason = f"Ошибка запроса к AI ({model}): {e}"
+            demo_reason = f"Ошибка запроса к AI: {e}"
 
-    return JSONResponse({"bpmn_xml": bpmn_xml, "use_case": use_case, "demo": is_demo, "demo_reason": demo_reason})
+    return JSONResponse({
+        "bpmn_xml": bpmn_xml,
+        "use_case": use_case,
+        "demo": is_demo,
+        "demo_reason": demo_reason,
+        "file_stats": file_stats,
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -334,6 +343,5 @@ async def analyze(
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)

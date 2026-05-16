@@ -134,9 +134,9 @@
   <div id="error-box"></div>
 
   <div id="results">
-    <div class="demo-badge" id="demo-badge">
-      ℹ️ <strong>Демо-режим:</strong> OPENAI_API_KEY не задан — показан типовой шаблон.
-      Добавьте ключ в переменные окружения для персонализированного анализа.
+    <div class="demo-badge" id="demo-badge"></div>
+    <div id="file-stats-box" style="display:none;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 16px;font-size:.85rem;color:#0369a1;margin-bottom:16px;">
+      <strong>📊 Файл загружен:</strong> <span id="file-stats-text"></span>
     </div>
 
     <div class="tabs">
@@ -241,6 +241,18 @@ async function analyze(){
     } else {
       badge.style.display = 'none';
     }
+
+    var statsBox = document.getElementById('file-stats-box');
+    if (data.file_stats) {
+      var cols = data.file_stats.columns.slice(0, 8).join(', ');
+      if (data.file_stats.columns.length > 8) cols += ' …ещё ' + (data.file_stats.columns.length - 8);
+      document.getElementById('file-stats-text').textContent =
+        data.file_stats.rows + ' строк | Колонки: ' + cols;
+      statsBox.style.display = 'block';
+    } else {
+      statsBox.style.display = 'none';
+    }
+
     document.getElementById('results').style.display = 'block';
 
     renderBpmn(_bpmnXml);
