@@ -10,7 +10,7 @@ app = FastAPI(title="CRM Process Optimizer")
 _HTML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "index.html")
 
 # ---------------------------------------------------------------------------
-# OpenAI — optional, graceful fallback
+# AI client — Groq preferred, OpenAI as fallback, demo mode if neither set
 # ---------------------------------------------------------------------------
 try:
     from openai import OpenAI as _OpenAI
@@ -18,17 +18,28 @@ try:
 except Exception:
     _OPENAI_LIB = False
 
-
-def get_openai_client():
+# (model_name, client_or_None)
+def get_ai_client():
+    if not _OPENAI_LIB:
+        return None, None
     try:
-        if not _OPENAI_LIB:
-            return None
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if api_key:
-            return _OpenAI(api_key=api_key)
+        groq_key = os.environ.get("GROQ_API_KEY")
+        if groq_key:
+            client = _OpenAI(
+                base_url="https://api.groq.com/openai/v1",
+                api_key=groq_key,
+            )
+            return client, "llama3-8b-8192"
     except Exception:
         pass
-    return None
+    try:
+        openai_key = os.environ.get("OPENAI_API_KEY")
+        if openai_key:
+            client = _OpenAI(api_key=openai_key)
+            return client, "gpt-4o"
+    except Exception:
+        pass
+    return None, None
 
 
 # ---------------------------------------------------------------------------
@@ -197,12 +208,12 @@ def _build_prompt(df, problem: str) -> str:
     return f"{cols}Проблема: {prob}\n\nОтветь строго JSON: {{\"bpmn_xml\": \"...\", \"use_case\": \"...\"}}"
 
 
-def _call_openai(df, problem: str):
-    client = get_openai_client()
+def _call_ai(df, problem: str):
+    client, model = get_ai_client()
     if client is None:
         return None, None
     resp = client.chat.completions.create(
-        model="gpt-4o",
+        model=model,
         messages=[{"role": "system", "content": _SYSTEM}, {"role": "user", "content": _build_prompt(df, problem)}],
         temperature=0.3,
         max_tokens=6000,
@@ -251,21 +262,27 @@ async def analyze(
                 friendly = f"Ошибка чтения файла: {msg}"
             return JSONResponse({"error": friendly}, status_code=400)
 
-    demo = get_openai_client() is None
-    if demo:
+    client, model = get_ai_client()
+    if client is None:
         bpmn_xml = MOCK_BPMN
         use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
         is_demo = True
+        demo_reason = "GROQ_API_KEY и OPENAI_API_KEY не заданы"
     else:
         try:
-            bpmn_xml, use_case = _call_openai(df, problem)
+            bpmn_xml, use_case = _call_ai(df, problem)
             if not bpmn_xml:
                 return JSONResponse({"error": "AI не вернул BPMN XML. Попробуйте ещё раз."}, status_code=500)
             is_demo = False
+            demo_reason = None
         except Exception as e:
-            return JSONResponse({"error": f"Ошибка OpenAI: {e}"}, status_code=500)
+            # Graceful fallback to demo on any AI error
+            bpmn_xml = MOCK_BPMN
+            use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
+            is_demo = True
+            demo_reason = f"Ошибка запроса к AI ({model}): {e}"
 
-    return JSONResponse({"bpmn_xml": bpmn_xml, "use_case": use_case, "demo": is_demo})
+    return JSONResponse({"bpmn_xml": bpmn_xml, "use_case": use_case, "demo": is_demo, "demo_reason": demo_reason})
 
 
 # ---------------------------------------------------------------------------

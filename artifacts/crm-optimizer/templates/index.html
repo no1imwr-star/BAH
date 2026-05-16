@@ -233,7 +233,14 @@ async function analyze(){
     _bpmnXml = data.bpmn_xml;
     _ucText  = data.use_case;
 
-    document.getElementById('demo-badge').style.display = data.demo ? 'block' : 'none';
+    var badge = document.getElementById('demo-badge');
+    if (data.demo) {
+      badge.style.display = 'block';
+      badge.innerHTML = 'ℹ️ <strong>Демо-режим:</strong> ' + (data.demo_reason || 'API-ключ не задан') +
+        '. Показан типовой шаблон.';
+    } else {
+      badge.style.display = 'none';
+    }
     document.getElementById('results').style.display = 'block';
 
     renderBpmn(_bpmnXml);
