@@ -15,20 +15,19 @@
     .header { background: #fff; border-bottom: 1px solid #ebebeb; padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200; }
     .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
     .logo-mark { width: 34px; height: 34px; background: #FF385C; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
     .logo-name { font-size: 1.05rem; font-weight: 700; color: #222; letter-spacing: -0.3px; }
     .logo-name span { color: #FF385C; }
-    .logo-sub { font-size: 0.68rem; color: #717171; font-weight: 400; }
+    .logo-sub { font-size: 0.68rem; color: #717171; font-weight: 400; display: block; }
     .header-badge { font-size: 0.78rem; color: #717171; background: #f7f7f7; border: 1px solid #ebebeb; border-radius: 20px; padding: 4px 12px; }
 
     /* ── HERO ── */
     .hero { text-align: center; padding: 52px 24px 36px; max-width: 700px; margin: 0 auto; }
     .hero-eyebrow { display: inline-block; font-size: 0.78rem; font-weight: 600; color: #FF385C; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 14px; }
     .hero h1 { font-size: 2.3rem; font-weight: 700; color: #222; line-height: 1.2; letter-spacing: -0.8px; margin-bottom: 12px; }
-    .hero p { font-size: 0.97rem; color: #717171; line-height: 1.65; max-width: 500px; margin: 0 auto; }
+    .hero p { font-size: 0.97rem; color: #717171; line-height: 1.65; max-width: 520px; margin: 0 auto; }
 
     /* ── CONTAINER ── */
-    .container { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+    .container { max-width: 980px; margin: 0 auto; padding: 0 24px 80px; }
 
     /* ── CARD ── */
     .card { background: #fff; border-radius: 16px; padding: 34px 38px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); border: 1px solid #ebebeb; }
@@ -49,16 +48,15 @@
     .upload-hint { font-size: 0.76rem; color: #717171; }
     .upload-filename { font-size: 0.81rem; color: #FF385C; font-weight: 600; margin-top: 8px; word-break: break-all; }
 
-    textarea { width: 100%; min-height: 158px; border: 1.5px solid #ddd; border-radius: 12px; padding: 13px 15px; font-size: 0.89rem; font-family: inherit; resize: vertical; transition: border-color .2s, box-shadow .2s; color: #222; line-height: 1.5; }
+    textarea { width: 100%; min-height: 158px; border: 1.5px solid #ddd; border-radius: 12px; padding: 13px 15px; font-size: 0.89rem; font-family: inherit; resize: vertical; transition: border-color .2s, box-shadow .2s; color: #222; line-height: 1.5; background: #fff; }
     textarea:focus { outline: none; border-color: #FF385C; box-shadow: 0 0 0 3px rgba(255,56,92,0.1); }
     textarea::placeholder { color: #bbb; }
-
     .field-tip { font-size: 0.74rem; color: #717171; margin-top: 5px; }
 
     .btn-analyze { margin-top: 26px; width: 100%; padding: 15px; background: #FF385C; color: #fff; border: none; border-radius: 12px; font-size: 0.94rem; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; box-shadow: 0 4px 12px rgba(255,56,92,.28); }
     .btn-analyze:hover:not(:disabled) { background: #e0314f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,56,92,.35); }
     .btn-analyze:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
-    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; flex-shrink: 0; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── INFO BOXES ── */
@@ -69,35 +67,38 @@
 
     /* ── RESULTS ── */
     #results { display: none; margin-top: 26px; }
-    .divider { height: 1px; background: #ebebeb; margin: 22px 0; }
+    .divider  { height: 1px; background: #ebebeb; margin: 22px 0; }
 
     /* ── TABS ── */
-    .tabs { display: flex; gap: 2px; border-bottom: 2px solid #ebebeb; margin-bottom: 24px; }
-    .tab { padding: 10px 20px; border: none; background: none; font-size: 0.87rem; font-weight: 500; color: #717171; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; font-family: inherit; white-space: nowrap; }
+    .tabs { display: flex; gap: 2px; border-bottom: 2px solid #ebebeb; margin-bottom: 24px; overflow-x: auto; }
+    .tab  { padding: 10px 20px; border: none; background: none; font-size: 0.87rem; font-weight: 500; color: #717171; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; font-family: inherit; white-space: nowrap; }
     .tab.active { color: #FF385C; border-color: #FF385C; }
     .tab:hover:not(.active) { color: #222; background: #fafafa; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ── BPMN DUAL VIEW ── */
-    .bpmn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 780px) { .bpmn-grid { grid-template-columns: 1fr; } }
+    /* ── MERMAID BOXES ── */
+    .mermaid-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 780px) { .mermaid-grid { grid-template-columns: 1fr; } }
 
-    .bpmn-card { background: #fff; border: 1.5px solid #ebebeb; border-radius: 14px; overflow: hidden; }
-    .bpmn-card-header { padding: 12px 16px 10px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    .bpmn-card-label { font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-    .badge-asis { color: #b45309; background: #fef3c7; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
-    .badge-tobe { color: #065f46; background: #d1fae5; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
-    .bpmn-toolbar { display: flex; gap: 5px; }
-    .btn-xs { padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; color: #222; font-family: inherit; transition: background .1s; }
-    .btn-xs:hover { background: #f7f7f7; }
-    .btn-xs.dl { background: #222; color: #fff; border-color: #222; }
-    .btn-xs.dl:hover { background: #444; }
-    .bpmn-canvas { width: 100%; height: 280px; background: #fafafa; }
-    .bpmn-err { display: none; padding: 8px 14px; background: #fff1f2; color: #be123c; font-size: 0.78rem; border-top: 1px solid #fecdd3; }
+    .mermaid-box { background: #fff; border: 1.5px solid #ebebeb; border-radius: 16px; padding: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.06); overflow: hidden; }
+    .mermaid-box-header { padding: 14px 20px 12px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .mermaid-box-title { font-size: 0.86rem; font-weight: 700; color: #222; display: flex; align-items: center; gap: 8px; }
+    .badge-asis { color: #92400e; background: #fef3c7; border-radius: 6px; padding: 2px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px; }
+    .badge-tobe { color: #065f46; background: #d1fae5; border-radius: 6px; padding: 2px 9px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3px; }
+    .mermaid-box-body { padding: 20px; min-height: 200px; overflow-x: auto; }
+    .mermaid-box-body .mermaid { display: flex; justify-content: center; }
+    .mermaid-box-body svg { max-width: 100%; height: auto; }
+    .mermaid-err { display: none; padding: 10px 16px; background: #fff1f2; color: #be123c; font-size: 0.78rem; border-top: 1px solid #fecdd3; }
+    .mermaid-loading { color: #aaa; font-size: 0.82rem; text-align: center; padding: 30px 0; }
 
     /* ── SPEC / RTM ── */
-    .doc-body { background: #fff; border: 1.5px solid #ebebeb; border-radius: 12px; padding: 28px 32px; max-height: 680px; overflow-y: auto; line-height: 1.75; font-size: 0.9rem; color: #222; }
+    .doc-wrap { background: #fff; border: 1.5px solid #ebebeb; border-radius: 14px; overflow: hidden; }
+    .doc-header { padding: 14px 24px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .doc-header-title { font-weight: 600; color: #222; font-size: 0.88rem; }
+    .btn-dl { padding: 7px 14px; background: #222; color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .15s; }
+    .btn-dl:hover { background: #444; }
+    .doc-body { padding: 28px 32px; max-height: 680px; overflow-y: auto; line-height: 1.75; font-size: 0.9rem; color: #222; }
     .doc-body h1 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
     .doc-body h2 { font-size: 0.92rem; font-weight: 700; color: #FF385C; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.4px; }
     .doc-body h3 { font-size: 0.88rem; font-weight: 600; color: #222; margin: 14px 0 5px; }
@@ -112,11 +113,6 @@
     .doc-body strong, .doc-body b { color: #222; font-weight: 600; }
     .doc-body hr { border: none; border-top: 1px solid #ebebeb; margin: 18px 0; }
     .doc-body code { background: #f7f7f7; padding: 1px 5px; border-radius: 4px; font-size: 0.84em; color: #FF385C; }
-
-    .doc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
-    .doc-header-title { font-weight: 600; color: #222; font-size: 0.88rem; }
-    .btn-dl { padding: 7px 14px; background: #222; color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .15s; }
-    .btn-dl:hover { background: #444; }
 
     /* ── FOOTER ── */
     .footer { text-align: center; font-size: 0.76rem; color: #aaa; padding: 28px 0 12px; }
@@ -133,8 +129,8 @@
         <circle cx="9" cy="9" r="3" fill="none" stroke="#fff" stroke-width="1.5"/>
       </svg>
     </div>
-    <div class="logo-text">
-      <span class="logo-name">B<span>A</span>lance.ai</span>
+    <div>
+      <div class="logo-name">B<span>A</span>lance.ai</div>
       <span class="logo-sub">Business Process Documentation Generator</span>
     </div>
   </a>
@@ -144,7 +140,7 @@
 <div class="hero">
   <span class="hero-eyebrow">Universal Process Intelligence</span>
   <h1>Проектная документация<br/>из любых бизнес-данных</h1>
-  <p>Загрузите таблицу любого процесса — получите As-Is и To-Be BPMN, полную спецификацию требований и матрицу трассировки RTM.</p>
+  <p>Загрузите таблицу любого процесса — получите детальные As-Is и To-Be Mermaid-диаграммы, полную 4-уровневую спецификацию и матрицу RTM.</p>
 </div>
 
 <div class="container">
@@ -163,8 +159,8 @@
       </div>
       <div>
         <label class="field-label">Контекст / проблема <span class="field-hint">(необязательно)</span></label>
-        <textarea id="problem" placeholder="С файлом: поле необязательно — структура и проблема определяются автоматически.&#10;&#10;Без файла: опишите процесс и задачу, например: «Ручное согласование договоров занимает 14 дней, нет контроля версий»."></textarea>
-        <div class="field-tip">💡 С файлом — AI анализирует структуру данных автоматически. Поле можно оставить пустым.</div>
+        <textarea id="problem" placeholder="С файлом: поле необязательно — AI анализирует структуру таблицы автоматически.&#10;&#10;Без файла: опишите процесс и задачу, например: «Ручное согласование договоров занимает 14 дней, нет контроля версий»."></textarea>
+        <div class="field-tip">💡 С файлом AI выстраивает диаграммы по реальным колонкам. Поле можно оставить пустым.</div>
       </div>
     </div>
     <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
@@ -178,51 +174,42 @@
   <div id="results">
     <div class="ibox demo"  id="demo-badge"></div>
     <div class="ibox stats" id="stats-box"></div>
-
     <div class="divider"></div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('bpmn', this)">📊 BPMN As-Is vs To-Be</button>
-      <button class="tab"        onclick="switchTab('spec', this)">📋 Спецификация требований</button>
-      <button class="tab"        onclick="switchTab('rtm',  this)">🗂 Матрица RTM</button>
+      <button class="tab active" onclick="switchTab('bpmn', this)">📊 Карты процессов (As-Is / To-Be)</button>
+      <button class="tab"        onclick="switchTab('spec',  this)">📋 Спецификация требований</button>
+      <button class="tab"        onclick="switchTab('rtm',   this)">🗂 Матрица RTM</button>
     </div>
 
-    <!-- TAB 1: dual BPMN -->
+    <!-- TAB 1: Mermaid diagrams -->
     <div class="tab-panel active" id="tab-bpmn">
-      <div class="bpmn-grid">
+      <div class="mermaid-grid">
 
-        <!-- As-Is -->
-        <div class="bpmn-card">
-          <div class="bpmn-card-header">
-            <div class="bpmn-card-label">
-              <span class="badge-asis">AS-IS</span> Текущий процесс
-            </div>
-            <div class="bpmn-toolbar">
-              <button class="btn-xs" onclick="bpmnZoom('asis', 1.25)">＋</button>
-              <button class="btn-xs" onclick="bpmnZoom('asis', 0.8)">－</button>
-              <button class="btn-xs" onclick="bpmnFit('asis')">⊡</button>
-              <button class="btn-xs dl" onclick="downloadBpmn('asis')">↓ .bpmn</button>
+        <div class="mermaid-box">
+          <div class="mermaid-box-header">
+            <div class="mermaid-box-title">
+              <span class="badge-asis">AS-IS</span>
+              Карта текущего процесса
             </div>
           </div>
-          <div class="bpmn-canvas" id="canvas_as_is"></div>
-          <div class="bpmn-err" id="err_asis"></div>
+          <div class="mermaid-box-body" id="box-asis">
+            <div class="mermaid-loading">Генерация диаграммы…</div>
+          </div>
+          <div class="mermaid-err" id="err-asis"></div>
         </div>
 
-        <!-- To-Be -->
-        <div class="bpmn-card">
-          <div class="bpmn-card-header">
-            <div class="bpmn-card-label">
-              <span class="badge-tobe">TO-BE</span> Целевой процесс
-            </div>
-            <div class="bpmn-toolbar">
-              <button class="btn-xs" onclick="bpmnZoom('tobe', 1.25)">＋</button>
-              <button class="btn-xs" onclick="bpmnZoom('tobe', 0.8)">－</button>
-              <button class="btn-xs" onclick="bpmnFit('tobe')">⊡</button>
-              <button class="btn-xs dl" onclick="downloadBpmn('tobe')">↓ .bpmn</button>
+        <div class="mermaid-box">
+          <div class="mermaid-box-header">
+            <div class="mermaid-box-title">
+              <span class="badge-tobe">TO-BE</span>
+              Архитектура целевого процесса
             </div>
           </div>
-          <div class="bpmn-canvas" id="canvas_to_be"></div>
-          <div class="bpmn-err" id="err_tobe"></div>
+          <div class="mermaid-box-body" id="box-tobe">
+            <div class="mermaid-loading">Генерация диаграммы…</div>
+          </div>
+          <div class="mermaid-err" id="err-tobe"></div>
         </div>
 
       </div>
@@ -230,35 +217,55 @@
 
     <!-- TAB 2: Full Spec -->
     <div class="tab-panel" id="tab-spec">
-      <div class="doc-header">
-        <span class="doc-header-title">Полная спецификация требований (4 уровня)</span>
-        <button class="btn-dl" onclick="downloadDoc('spec')">↓ Скачать .md</button>
+      <div class="doc-wrap">
+        <div class="doc-header">
+          <span class="doc-header-title">Полная спецификация требований — 4 уровня</span>
+          <button class="btn-dl" onclick="downloadDoc('spec')">↓ Скачать .md</button>
+        </div>
+        <div class="doc-body" id="spec-body"></div>
       </div>
-      <div class="doc-body" id="spec-body"></div>
     </div>
 
     <!-- TAB 3: RTM -->
     <div class="tab-panel" id="tab-rtm">
-      <div class="doc-header">
-        <span class="doc-header-title">Матрица трассировки требований (RTM · MoSCoW)</span>
-        <button class="btn-dl" onclick="downloadDoc('rtm')">↓ Скачать .md</button>
+      <div class="doc-wrap">
+        <div class="doc-header">
+          <span class="doc-header-title">Матрица трассировки требований (RTM · MoSCoW)</span>
+          <button class="btn-dl" onclick="downloadDoc('rtm')">↓ Скачать .md</button>
+        </div>
+        <div class="doc-body" id="rtm-body"></div>
       </div>
-      <div class="doc-body" id="rtm-body"></div>
     </div>
   </div>
 
   <div class="footer">Powered by <span>BAlance.ai</span> · Groq llama-3.1-8b-instant · Universal Process Intelligence</div>
 </div>
 
-<!-- bpmn-js -->
-<script src="https://unpkg.com/bpmn-js@17.2.1/dist/bpmn-viewer.development.js"></script>
+<!-- Mermaid via ESM -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'neutral',
+    securityLevel: 'loose',
+    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
+    fontSize: 13,
+  });
+  window._mermaid = mermaid;
+  window._mermaidReady = true;
+  if (window._mermaidQueue) {
+    window._mermaidQueue.forEach(function(fn){ fn(); });
+    window._mermaidQueue = [];
+  }
+</script>
+
 <!-- marked.js -->
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 
 <script>
-var _viewers = { asis: null, tobe: null };
-var _xmls    = { asis: '', tobe: '' };
-var _docs    = { spec: '', rtm: '' };
+var _docs  = { spec: '', rtm: '' };
+var _codes = { asis: '', tobe: '' };
+var _renderCounter = 0;
 
 /* ── drag & drop ── */
 var dz = document.getElementById('drop-zone');
@@ -280,11 +287,50 @@ function switchTab(name, btn){
   document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if(name === 'bpmn'){
-    setTimeout(function(){
-      if(_viewers.asis) _viewers.asis.get('canvas').zoom('fit-viewport','auto');
-      if(_viewers.tobe) _viewers.tobe.get('canvas').zoom('fit-viewport','auto');
-    }, 60);
+}
+
+/* ── Mermaid rendering ── */
+function renderMermaid(boxId, errId, code) {
+  var box = document.getElementById(boxId);
+  var err = document.getElementById(errId);
+  if (!code || !code.trim()) {
+    box.innerHTML = '<div class="mermaid-loading">Нет данных для отображения</div>';
+    return;
+  }
+  box.innerHTML = '<div class="mermaid-loading">Отрисовка схемы…</div>';
+  err.style.display = 'none';
+
+  function doRender() {
+    _renderCounter++;
+    var uid = 'mermaid-svg-' + _renderCounter + '-' + Date.now();
+    try {
+      window._mermaid.render(uid, code).then(function(result) {
+        box.innerHTML = result.svg;
+        var svg = box.querySelector('svg');
+        if (svg) {
+          svg.style.maxWidth  = '100%';
+          svg.style.height    = 'auto';
+          svg.style.display   = 'block';
+          svg.style.margin    = '0 auto';
+        }
+      }).catch(function(e) {
+        box.innerHTML = '<div class="mermaid-loading">Схема недоступна</div>';
+        err.textContent = 'Ошибка Mermaid: ' + (e.message || e);
+        err.style.display = 'block';
+        console.error('Mermaid render error:', e, '\nCode:\n', code);
+      });
+    } catch(e) {
+      box.innerHTML = '<div class="mermaid-loading">Схема недоступна</div>';
+      err.textContent = 'Ошибка Mermaid: ' + (e.message || e);
+      err.style.display = 'block';
+    }
+  }
+
+  if (window._mermaidReady) {
+    doRender();
+  } else {
+    window._mermaidQueue = window._mermaidQueue || [];
+    window._mermaidQueue.push(doRender);
   }
 }
 
@@ -296,7 +342,7 @@ async function analyze(){
 
   btn.disabled = true;
   document.getElementById('spinner').style.display = 'block';
-  label.textContent = 'Анализируем данные…';
+  label.textContent = 'Анализируем данные и генерируем диаграммы…';
   errBox.style.display = 'none';
   document.getElementById('results').style.display = 'none';
 
@@ -310,15 +356,15 @@ async function analyze(){
     var data = await res.json();
 
     if(!res.ok || data.error){
-      errBox.textContent = '⚠ ' + (data.error || 'Неизвестная ошибка');
+      errBox.textContent = '⚠ ' + (data.error || 'Неизвестная ошибка сервера');
       errBox.style.display = 'block';
       return;
     }
 
-    _xmls.asis = data.bpmn_asis;
-    _xmls.tobe = data.bpmn_tobe;
-    _docs.spec = data.spec;
-    _docs.rtm  = data.rtm;
+    _codes.asis = data.mermaid_asis || '';
+    _codes.tobe = data.mermaid_tobe || '';
+    _docs.spec  = data.spec || '';
+    _docs.rtm   = data.rtm  || '';
 
     /* demo badge */
     var badge = document.getElementById('demo-badge');
@@ -332,8 +378,8 @@ async function analyze(){
     /* stats */
     var statsBox = document.getElementById('stats-box');
     if(data.file_stats){
-      var fs   = data.file_stats;
-      var cols = fs.columns.slice(0, 6).join(', ');
+      var fs = data.file_stats;
+      var cols = fs.columns.slice(0,6).join(', ');
       if(fs.columns.length > 6) cols += ' +' + (fs.columns.length - 6);
       var html = '<strong>📊 Таблица проанализирована:</strong> ' + fs.rows + ' строк · ' + fs.columns.length + ' колонок: ' + cols;
       if(fs.insights && fs.insights.length){
@@ -347,16 +393,19 @@ async function analyze(){
 
     document.getElementById('results').style.display = 'block';
 
-    renderBpmn('asis', _xmls.asis);
-    renderBpmn('tobe', _xmls.tobe);
-    renderDoc('spec', _docs.spec);
-    renderDoc('rtm',  _docs.rtm);
-
-    /* reset to BPMN tab */
+    /* reset to first tab */
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
     document.querySelector('.tab').classList.add('active');
     document.getElementById('tab-bpmn').classList.add('active');
+
+    /* render both diagrams */
+    renderMermaid('box-asis', 'err-asis', _codes.asis);
+    renderMermaid('box-tobe', 'err-tobe', _codes.tobe);
+
+    /* render spec + RTM */
+    document.getElementById('spec-body').innerHTML = marked.parse(_docs.spec);
+    document.getElementById('rtm-body').innerHTML  = marked.parse(_docs.rtm);
 
   } catch(e) {
     errBox.textContent = '⚠ Ошибка сети: ' + e.message;
@@ -368,45 +417,7 @@ async function analyze(){
   }
 }
 
-/* ── BPMN rendering ── */
-function renderBpmn(key, xml){
-  var containerId = key === 'asis' ? '#canvas_as_is' : '#canvas_to_be';
-  var errId       = key === 'asis' ? 'err_asis' : 'err_tobe';
-  var errEl       = document.getElementById(errId);
-  errEl.style.display = 'none';
-
-  if(_viewers[key]){ _viewers[key].destroy(); _viewers[key] = null; }
-  _viewers[key] = new BpmnJS({ container: containerId });
-
-  _viewers[key].importXML(xml).then(function(){
-    _viewers[key].get('canvas').zoom('fit-viewport', 'auto');
-  }).catch(function(err){
-    errEl.textContent = 'Ошибка BPMN: ' + err.message;
-    errEl.style.display = 'block';
-  });
-}
-
-function bpmnZoom(key, f){
-  if(_viewers[key]){ var c = _viewers[key].get('canvas'); c.zoom(c.zoom() * f); }
-}
-function bpmnFit(key){
-  if(_viewers[key]){ _viewers[key].get('canvas').zoom('fit-viewport', 'auto'); }
-}
-
-/* ── Doc rendering ── */
-function renderDoc(key, md){
-  document.getElementById(key + '-body').innerHTML = marked.parse(md || '');
-}
-
 /* ── Downloads ── */
-function downloadBpmn(key){
-  var xml = _xmls[key];
-  if(!xml) return;
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([xml], {type:'application/xml'}));
-  a.download = 'balance_ai_' + key + '.bpmn';
-  a.click();
-}
 function downloadDoc(key){
   var text = _docs[key];
   if(!text) return;
