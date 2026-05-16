@@ -190,21 +190,24 @@ MOCK_USE_CASE = """# Use Case: Оптимизированный процесс C
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
-_SYSTEM = """Ты — эксперт по бизнес-процессам, CRM и BPMN 2.0.
-Проанализируй данные и проблему, выдай строго JSON без markdown:
-{"bpmn_xml": "<BPMN 2.0 XML>", "use_case": "<Use Case Markdown>"}
-
-BPMN: валидный BPMN 2.0 для bpmn-js, два пула (Менеджер + CRM-система),
-полная секция BPMNDiagram с координатами, уникальные ID, НЕ использовать символ обратной кавычки в XML.
-Use Case: стандарт Коберна — таблицы Акторов, Основной сценарий, Альтернативы, Бизнес-правила, Метрики."""
+_SYSTEM = "Ты ИИ-бизнес-аналитик. Напиши краткое ТЗ и Use Case на русском языке по стандарту Коберна. Будь лаконичен, не лей воду, уложись в 500 слов. Выдай строго JSON без markdown: {\"bpmn_xml\": \"<BPMN 2.0 XML>\", \"use_case\": \"<Use Case Markdown>\"}. BPMN: валидный BPMN 2.0 для bpmn-js, два пула (Менеджер + CRM-система), секция BPMNDiagram с координатами, уникальные ID, без обратных кавычек в XML."
 
 
 def _build_prompt(df, problem: str) -> str:
-    cols = ""
-    if df is not None:
-        cols = f"CRM-данные: {len(df)} строк, колонки: {', '.join(df.columns.tolist())}\nПримеры:\n{df.head(3).to_string()}\n\n"
     prob = problem.strip() or "Создай типовой оптимизированный процесс для CRM."
-    return f"{cols}Проблема: {prob}\n\nОтветь строго JSON: {{\"bpmn_xml\": \"...\", \"use_case\": \"...\"}}"
+    if df is not None:
+        columns_str = ", ".join(list(df.columns))
+        total_rows = len(df)
+        stage_col = next(
+            (c for c in df.columns if "stage" in c.lower() or "статус" in c.lower()),
+            None,
+        )
+        funnel = ""
+        if stage_col:
+            unique_stages = ", ".join(str(v) for v in df[stage_col].dropna().unique()[:10])
+            funnel = f" Этапы воронки ({stage_col}): {unique_stages}."
+        return f"Проблема: {prob}. Колонки: {columns_str}. Строк в файле: {total_rows}.{funnel}"
+    return f"Проблема: {prob}."
 
 
 def _call_ai(df, problem: str):
@@ -215,7 +218,7 @@ def _call_ai(df, problem: str):
         model=model,
         messages=[{"role": "system", "content": _SYSTEM}, {"role": "user", "content": _build_prompt(df, problem)}],
         temperature=0.3,
-        max_tokens=6000,
+        max_tokens=3000,
         response_format={"type": "json_object"},
     )
     data = json.loads(resp.choices[0].message.content)
