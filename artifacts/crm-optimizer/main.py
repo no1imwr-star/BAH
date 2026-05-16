@@ -1,5 +1,4 @@
 import os
-import io
 import json
 from datetime import datetime
 from fastapi import FastAPI, File, UploadFile, Form
@@ -239,28 +238,28 @@ async def analyze(
 ):
     df = None
     if file and file.filename:
-        try:
-            contents = await file.read()
-            if file.filename.lower().endswith(".csv"):
-                df = pd.read_csv(io.BytesIO(contents))
-            elif file.filename.lower().endswith((".xlsx", ".xls")):
-                df = pd.read_excel(io.BytesIO(contents), engine="openpyxl")
-            else:
+        fname = file.filename.lower()
+        if fname.endswith((".xlsx", ".xls")):
+            try:
+                df = pd.read_excel(file.file, engine="openpyxl")
+            except Exception as e:
                 return JSONResponse(
-                    {"error": "Неподдерживаемый формат файла. Загрузите .csv, .xlsx или .xls."},
+                    {"error": f"Ошибка чтения Excel-файла: {e}"},
                     status_code=400,
                 )
-        except Exception as e:
-            msg = str(e)
-            if "engine" in msg.lower() or "format" in msg.lower() or "xlrd" in msg.lower():
-                friendly = (
-                    "Пожалуйста, проверьте формат файла. "
-                    "Если это CSV — переименуйте расширение в .csv. "
-                    "Для Excel используйте формат .xlsx."
+        elif fname.endswith(".csv"):
+            try:
+                df = pd.read_csv(file.file)
+            except Exception as e:
+                return JSONResponse(
+                    {"error": f"Ошибка чтения CSV-файла: {e}"},
+                    status_code=400,
                 )
-            else:
-                friendly = f"Ошибка чтения файла: {msg}"
-            return JSONResponse({"error": friendly}, status_code=400)
+        else:
+            return JSONResponse(
+                {"error": "Неверный формат файла. Поддерживаются только файлы .csv, .xls, .xlsx."},
+                status_code=400,
+            )
 
     client, model = get_ai_client()
     if client is None:
