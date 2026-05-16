@@ -1,5 +1,5 @@
 import os
-import json
+import re
 from datetime import datetime
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -190,7 +190,21 @@ MOCK_USE_CASE = """# Use Case: Оптимизированный процесс C
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
-_SYSTEM = "Ты ИИ-бизнес-аналитик. Напиши краткое ТЗ и Use Case на русском языке по стандарту Коберна. Будь лаконичен, не лей воду, уложись в 500 слов. Выдай строго JSON без markdown: {\"bpmn_xml\": \"<BPMN 2.0 XML>\", \"use_case\": \"<Use Case Markdown>\"}. BPMN: валидный BPMN 2.0 для bpmn-js, два пула (Менеджер + CRM-система), секция BPMNDiagram с координатами, уникальные ID, без обратных кавычек в XML."
+_SYSTEM = """Ты профессиональный бизнес-аналитик CRM. Сгенерируй для пользователя два артефакта на основе его проблемы:
+
+А) Детальное ТЗ и Use Case по стандарту Коберна на русском языке. Уложись в 400 слов. Пиши кратко и по делу.
+
+Б) Валидный, синтаксически корректный BPMN 2.0 XML код процесса To-Be. Код должен строго начинаться с тега <?xml version="1.0" encoding="UTF-8"?> и содержать все необходимые элементы (definitions, process, bpmndi:BPMNDiagram, bpmndi:BPMNPlane, bpmndi:BPMNShape) со стандартными координатами, чтобы библиотека bpmn-js могла отрисовать схему без ошибок.
+
+Формат ответа строго такой:
+1. Сначала текст Use Case (markdown).
+2. Затем BPMN XML внутри блока кода:
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+...
+```
+
+ВАЖНО: никакого JSON, никаких пояснений после XML блока."""
 
 
 def _build_prompt(df, problem: str) -> str:
@@ -210,6 +224,18 @@ def _build_prompt(df, problem: str) -> str:
     return f"Проблема: {prob}."
 
 
+def _parse_ai_response(text: str):
+    """Extract (bpmn_xml, use_case) from a free-text AI response containing a ```xml block."""
+    match = re.search(r"```xml\s*([\s\S]+?)```", text, re.IGNORECASE)
+    if match:
+        bpmn_xml = match.group(1).strip()
+        use_case = text[: match.start()].strip()
+    else:
+        bpmn_xml = ""
+        use_case = text.strip()
+    return bpmn_xml, use_case
+
+
 def _call_ai(df, problem: str):
     client, model = get_ai_client()
     if client is None:
@@ -219,11 +245,9 @@ def _call_ai(df, problem: str):
         messages=[{"role": "system", "content": _SYSTEM}, {"role": "user", "content": _build_prompt(df, problem)}],
         temperature=0.3,
         max_tokens=3000,
-        response_format={"type": "json_object"},
     )
-    ai_response = resp.choices[0].message.content
-    data = json.loads(str(ai_response))
-    return str(data.get("bpmn_xml", "")), str(data.get("use_case", ""))
+    ai_response = str(resp.choices[0].message.content)
+    return _parse_ai_response(ai_response)
 
 
 # ---------------------------------------------------------------------------
