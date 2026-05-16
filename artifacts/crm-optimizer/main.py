@@ -28,7 +28,7 @@ def get_ai_client():
                 base_url="https://api.groq.com/openai/v1",
                 api_key=groq_key,
             )
-            return client, "llama3-8b-8192"
+            return client, "llama-3.1-8b-instant"
     except Exception:
         pass
     try:
