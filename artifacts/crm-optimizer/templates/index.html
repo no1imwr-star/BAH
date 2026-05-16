@@ -245,9 +245,10 @@
 <script type="module">
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   mermaid.initialize({
-    startOnLoad: false,
-    theme: 'neutral',
-    securityLevel: 'loose',
+    startOnLoad:    false,
+    theme:          'neutral',
+    securityLevel:  'loose',
+    suppressErrors: true,
     flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
     fontSize: 13,
   });
@@ -290,6 +291,10 @@ function switchTab(name, btn){
 }
 
 /* ── Mermaid rendering ── */
+function stripEmojis(s) {
+  return s.replace(/[\u{1F300}-\u{1FFFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F1FF}\u{1F200}-\u{1F2FF}\u{1F900}-\u{1F9FF}\u{231A}-\u{231B}\u{23E9}-\u{23F3}\u{23F8}-\u{23FA}\u{25AA}-\u{25AB}\u{25B6}\u{25C0}\u{25FB}-\u{25FE}\u{2614}-\u{2615}\u{2648}-\u{2653}\u{267F}\u{2693}\u{26A1}\u{26AA}-\u{26AB}\u{26BD}-\u{26BE}\u{26C4}-\u{26C5}\u{26CE}\u{26D4}\u{26EA}\u{26F2}-\u{26F3}\u{26F5}\u{26FA}\u{26FD}\u{2702}\u{2705}\u{2708}-\u{270D}\u{270F}\u{2712}\u{2714}\u{2716}\u{271D}\u{2721}\u{2728}\u{2733}-\u{2734}\u{2744}\u{2747}\u{274C}\u{274E}\u{2753}-\u{2755}\u{2757}\u{2763}-\u{2764}\u{2795}-\u{2797}\u{27A1}\u{27B0}\u{27BF}\u{2934}-\u{2935}\u{2B05}-\u{2B07}\u{2B1B}-\u{2B1C}\u{2B50}\u{2B55}\u{3030}\u{303D}\u{3297}\u{3299}]/gu, '');
+}
+
 function renderMermaid(boxId, errId, code) {
   var box = document.getElementById(boxId);
   var err = document.getElementById(errId);
@@ -300,28 +305,37 @@ function renderMermaid(boxId, errId, code) {
   box.innerHTML = '<div class="mermaid-loading">Отрисовка схемы…</div>';
   err.style.display = 'none';
 
-  function doRender() {
+  function tryRender(codeToRender, isRetry) {
     _renderCounter++;
     var uid = 'mermaid-svg-' + _renderCounter + '-' + Date.now();
+    return window._mermaid.render(uid, codeToRender).then(function(result) {
+      box.innerHTML = result.svg;
+      var svg = box.querySelector('svg');
+      if (svg) {
+        svg.style.maxWidth = '100%';
+        svg.style.height   = 'auto';
+        svg.style.display  = 'block';
+        svg.style.margin   = '0 auto';
+      }
+    }).catch(function(e) {
+      if (!isRetry) {
+        // Retry once after stripping emojis — common source of parse errors
+        var clean = stripEmojis(codeToRender);
+        return tryRender(clean, true);
+      }
+      box.innerHTML = '<div class="mermaid-loading">Схема в текстовом виде</div>';
+      err.textContent = 'Синтаксическая ошибка Mermaid — показан код: ' + (e.message || '');
+      err.style.display = 'block';
+      console.error('Mermaid render error:', e, '\nCode:\n', codeToRender);
+    });
+  }
+
+  function doRender() {
     try {
-      window._mermaid.render(uid, code).then(function(result) {
-        box.innerHTML = result.svg;
-        var svg = box.querySelector('svg');
-        if (svg) {
-          svg.style.maxWidth  = '100%';
-          svg.style.height    = 'auto';
-          svg.style.display   = 'block';
-          svg.style.margin    = '0 auto';
-        }
-      }).catch(function(e) {
-        box.innerHTML = '<div class="mermaid-loading">Схема недоступна</div>';
-        err.textContent = 'Ошибка Mermaid: ' + (e.message || e);
-        err.style.display = 'block';
-        console.error('Mermaid render error:', e, '\nCode:\n', code);
-      });
+      tryRender(code, false);
     } catch(e) {
       box.innerHTML = '<div class="mermaid-loading">Схема недоступна</div>';
-      err.textContent = 'Ошибка Mermaid: ' + (e.message || e);
+      err.textContent = 'Ошибка инициализации Mermaid: ' + (e.message || e);
       err.style.display = 'block';
     }
   }

@@ -81,16 +81,61 @@ def analyze_dataframe(df: pd.DataFrame) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# MERMAID CLEANING
+# MERMAID SYNTAX FIXER — strips markers, ensures node IDs, one declaration line
 # ---------------------------------------------------------------------------
-def _clean_mermaid(code: str) -> str:
-    code = re.sub(r"```mermaid\s*", "", code, flags=re.IGNORECASE)
-    code = re.sub(r"```\s*", "", code)
-    code = code.strip()
-    # Ensure it starts with a valid graph declaration
-    if code and not re.match(r"^\s*(graph|flowchart|sequenceDiagram|classDiagram)", code):
-        code = "graph TD\n" + code
-    return code
+def fix_mermaid_syntax(raw: str) -> str:
+    # 1. Strip code fences
+    code = re.sub(r"```mermaid\s*", "", raw, flags=re.IGNORECASE)
+    code = re.sub(r"```\s*", "", code).strip()
+
+    if not code:
+        return "graph TD\n  A[Нет данных]"
+
+    lines = code.splitlines()
+    out   = ["graph TD"]   # always enforce a clean header
+    node_counter = [1]     # mutable for closure
+
+    def next_id():
+        nid = f"node{node_counter[0]}"
+        node_counter[0] += 1
+        return nid
+
+    for raw_line in lines:
+        line = raw_line.strip()
+
+        # Skip blank lines and any existing graph declaration
+        if not line or re.match(r"^(graph|flowchart)\s", line):
+            continue
+
+        # Skip pure comment lines
+        if line.startswith("%%"):
+            out.append("    " + line)
+            continue
+
+        # If the line contains a --> arrow it's a valid edge — keep as-is
+        if "-->" in line or "---" in line:
+            out.append("    " + line)
+            continue
+
+        # Bare round node: ((text)) with no ID → prepend generated ID
+        line = re.sub(r"^(\(\()", lambda m: next_id() + m.group(1), line)
+        # Bare round node: (text) with no ID → prepend generated ID
+        line = re.sub(r"^(\()", lambda m: next_id() + m.group(1), line)
+        # Bare square node: [text] with no ID → prepend generated ID
+        line = re.sub(r"^(\[)", lambda m: next_id() + m.group(1), line)
+        # Bare diamond: {text} with no ID → prepend generated ID
+        line = re.sub(r"^(\{)", lambda m: next_id() + m.group(1), line)
+
+        out.append("    " + line)
+
+    # Remove duplicate consecutive blank lines that could trip the parser
+    result_lines = []
+    for l in out:
+        if l.strip() == "" and result_lines and result_lines[-1].strip() == "":
+            continue
+        result_lines.append(l)
+
+    return "\n".join(result_lines)
 
 
 # ---------------------------------------------------------------------------
@@ -256,22 +301,36 @@ SPEC:
 RTM:
 [матрица трассировки в Markdown]
 
+===== КАНОНИЧЕСКИЙ СИНТАКСИС MERMAID — ОБЯЗАТЕЛЬНО К СОБЛЮДЕНИЮ =====
+КАЖДЫЙ УЗЕЛ ДОЛЖЕН ИМЕТЬ БУКВЕННО-ЦИФРОВОЙ ID. Пример правильного кода:
+
+graph TD
+  A((Старт)) --> B[Ручная квалификация]
+  B --> C{Сделка выиграна?}
+  C -->|Да| D[Закрытие сделки]
+  C -->|Нет| E[Потеря лида]
+  D --> F((Конец))
+
+ЗАПРЕЩЕНО: писать ((Текст)) или [Текст] без ID перед скобками.
+ЗАПРЕЩЕНО: помещать несколько узлов/связей на одну строку.
+ЗАПРЕЩЕНО: использовать " кавычки, ; точки с запятой, < > внутри меток узлов.
+ОБЯЗАТЕЛЬНО: каждая связь --> на отдельной строке.
+ОБЯЗАТЕЛЬНО: начинать файл ровно со строки "graph TD", ничего до неё.
+
 ===== ПРАВИЛА ДЛЯ MERMAID_ASIS =====
-- Синтаксис: graph TD (сверху вниз)
-- Минимум 15–20 узлов и развилок
-- Отображает ТЕКУЩИЙ ручной/хаотичный процесс на основе колонок файла
-- Показывай: ручные операции, ветвления на отказах, зависания, потери конверсии, многократные согласования
-- Узлы: круглые скобки (([...])) для начала/конца, фигурные {} для решений, квадратные [] для задач
-- НЕ используй кавычки внутри квадратных скобок узлов, пиши текст без спецсимволов
-- Стрелки только через --> или -->|подпись|
+- Ровно одна строка заголовка: graph TD
+- Минимум 15 узлов и развилок, все с уникальными ID
+- Отображает ТЕКУЩИЙ ручной/хаотичный процесс по колонкам файла
+- Показывай: ручные операции, ветвления при отказах, зависания, потери конверсии, многократные согласования
+- Форма узлов: A((Старт/Конец)), B[Задача], C{Решение}
+- Подписи стрелок: -->|Да| -->|Нет| -->|Отказ|
 
 ===== ПРАВИЛА ДЛЯ MERMAID_TOBE =====
-- Синтаксис: graph TD (сверху вниз)
-- Минимум 15–20 узлов и развилок
+- Те же строгие правила синтаксиса что для ASIS
+- Минимум 15 узлов, все с уникальными ID
 - Отображает ЦЕЛЕВОЙ автоматизированный процесс
-- Показывай: авто-триггеры, AI-модули, системные интеграции, SLA-контроль, эскалации, предиктивную аналитику
-- Те же правила синтаксиса что для ASIS
-- Узлы и подписи строго на русском языке
+- Показывай: авто-триггеры, AI-модули, интеграции, SLA-контроль, эскалации
+- Все подписи на русском языке
 
 ===== ПРАВИЛА ДЛЯ SPEC =====
 Markdown-документ строго по 4 уровням:
@@ -324,8 +383,8 @@ def _parse_ai_response(text: str) -> dict:
     rtm_text     = extract_block("RTM:",           [], text)
 
     return {
-        "mermaid_asis": _clean_mermaid(mermaid_asis),
-        "mermaid_tobe": _clean_mermaid(mermaid_tobe),
+        "mermaid_asis": fix_mermaid_syntax(mermaid_asis),
+        "mermaid_tobe": fix_mermaid_syntax(mermaid_tobe),
         "spec":         spec_text or "",
         "rtm":          rtm_text or "",
     }

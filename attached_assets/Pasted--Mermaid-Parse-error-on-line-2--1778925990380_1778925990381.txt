@@ -1,0 +1,60 @@
+При рендеринге Mermaid возникает синтаксическая ошибка "Parse error on line 2", так как ИИ путает синтаксис (пытается объявить узел на той же строке, что и graph TD, или забывает присвоить узлам ID, например, пишет ((Начало)) вместо A((Начало))). 
+
+Пожалуйста, полностью перепиши и стабилизируй функции обработки кода Mermaid в main.py, добавив автоматическую валидацию и форматирование на Python:
+
+1. ДОБАВЬ ФУНКЦИЮ АВТО-ИСПРАВЛЕНИЯ MERMAID НА PYTHON:
+Внутри функции `/analyze` перед передачей строк в HTML-шаблон пропусти переменные as_is_mermaid и to_be_mermaid через функцию очистки и форматирования:
+
+def fix_mermaid_syntax(text):
+    import re
+    # Удаляем маркеры кода ```mermaid и ```
+    text = re.sub(r'```mermaid', '', text)
+    text = re.sub(r'```', '', text).strip()
+    
+    lines = text.split('\n')
+    cleaned_lines = []
+    
+    # Гарантируем, что первая строка содержит ТОЛЬКО тип графа
+    cleaned_lines.append("graph TD")
+    
+    node_counter = 1
+    for line in lines:
+        line_str = line.strip()
+        if not line_str or "graph " in line_str or "graph\t" in line_str:
+            continue
+            
+        # Исправляем ошибку отсутствия ID у круглых узлов: меняем ((Текст)) на nodeX((Текст))
+        if line_str.startswith("((") and "-->" not in line_str:
+            line_str = f"node_{node_counter}{line_str}"
+            node_counter += 1
+            
+        # Исправляем ошибку отсутствия ID у квадратных узлов: меняем [Текст] на nodeX[Текст]
+        if line_str.startswith("[") and "-->" not in line_str:
+            line_str = f"node_{node_counter}{line_str}"
+            node_counter += 1
+            
+        cleaned_lines.append(line_str)
+        
+    return "\n".join(cleaned_lines)
+
+2. ОБНОВИ СИСТЕМНЫЙ ПРОМПТ ДЛЯ GROQ (Обучение синтаксису):
+Добавь в инструкцию для ИИ жесткое правило:
+"Пиши код Mermaid строго по канонам. Каждая связь должна быть на новой строке. Узлы ОБЯЗАНЫ иметь буквенно-цифровой ID. Пример правильного синтаксиса:
+graph TD
+  A((Старт)) --> B[Ручная квалификация]
+  B --> C{{Сделка выиграна?}}
+  C -->|Да| D[Успех]
+  C -->|Нет| E[Отказ]"
+
+3. СТРАХОВКА НА ФРОНТЕНДЕ (Error Catching):
+В HTML-шаблоне результатов обнови блок инициализации Mermaid, чтобы при возникновении любой синтаксической ошибки отрисовка не ломалась:
+<script type="module">
+  import mermaid from 'https://jsdelivr.net';
+  mermaid.initialize({ 
+    startOnLoad: true, 
+    theme: 'neutral',
+    suppressErrors: true 
+  });
+</script>
+
+Проверь весь код на синтаксическую корректность, запусти тесты обработки строк, сделай коммит и отправь изменения в GitHub репозиторий.
