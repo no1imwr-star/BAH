@@ -221,8 +221,9 @@ def _call_ai(df, problem: str):
         max_tokens=3000,
         response_format={"type": "json_object"},
     )
-    data = json.loads(resp.choices[0].message.content)
-    return data.get("bpmn_xml", ""), data.get("use_case", "")
+    ai_response = resp.choices[0].message.content
+    data = json.loads(str(ai_response))
+    return str(data.get("bpmn_xml", "")), str(data.get("use_case", ""))
 
 
 # ---------------------------------------------------------------------------
