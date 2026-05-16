@@ -241,6 +241,7 @@ async def analyze(
         fname = file.filename.lower()
         if fname.endswith((".xlsx", ".xls")):
             try:
+                file.file.seek(0)
                 df = pd.read_excel(file.file, engine="openpyxl")
             except Exception as e:
                 return JSONResponse(
@@ -249,6 +250,7 @@ async def analyze(
                 )
         elif fname.endswith(".csv"):
             try:
+                file.file.seek(0)
                 df = pd.read_csv(file.file)
             except Exception as e:
                 return JSONResponse(
