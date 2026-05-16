@@ -3,420 +3,128 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BAlance.ai — CRM Streamlining & Funnel Architecture</title>
+  <title>BAlance.ai — Business Process Documentation Generator</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f7f7f7;
-      color: #222222;
-      min-height: 100vh;
-    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7f7; color: #222; min-height: 100vh; }
 
     /* ── HEADER ── */
-    .header {
-      background: #ffffff;
-      border-bottom: 1px solid #ebebeb;
-      padding: 0 40px;
-      height: 64px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-decoration: none;
-    }
-    .logo-mark {
-      width: 34px;
-      height: 34px;
-      background: #FF385C;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .logo-mark svg { display: block; }
+    .header { background: #fff; border-bottom: 1px solid #ebebeb; padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200; }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-mark { width: 34px; height: 34px; background: #FF385C; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .logo-text { display: flex; flex-direction: column; line-height: 1.2; }
-    .logo-name {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #222222;
-      letter-spacing: -0.3px;
-    }
+    .logo-name { font-size: 1.05rem; font-weight: 700; color: #222; letter-spacing: -0.3px; }
     .logo-name span { color: #FF385C; }
-    .logo-sub {
-      font-size: 0.68rem;
-      color: #717171;
-      font-weight: 400;
-      letter-spacing: 0.2px;
-    }
-    .header-badge {
-      font-size: 0.78rem;
-      color: #717171;
-      background: #f7f7f7;
-      border: 1px solid #ebebeb;
-      border-radius: 20px;
-      padding: 4px 12px;
-    }
+    .logo-sub { font-size: 0.68rem; color: #717171; font-weight: 400; }
+    .header-badge { font-size: 0.78rem; color: #717171; background: #f7f7f7; border: 1px solid #ebebeb; border-radius: 20px; padding: 4px 12px; }
 
     /* ── HERO ── */
-    .hero {
-      text-align: center;
-      padding: 56px 24px 40px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-    .hero-eyebrow {
-      display: inline-block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #FF385C;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-    .hero h1 {
-      font-size: 2.4rem;
-      font-weight: 700;
-      color: #222222;
-      line-height: 1.2;
-      letter-spacing: -0.8px;
-      margin-bottom: 14px;
-    }
-    .hero p {
-      font-size: 1rem;
-      color: #717171;
-      line-height: 1.6;
-      max-width: 520px;
-      margin: 0 auto;
-    }
+    .hero { text-align: center; padding: 52px 24px 36px; max-width: 700px; margin: 0 auto; }
+    .hero-eyebrow { display: inline-block; font-size: 0.78rem; font-weight: 600; color: #FF385C; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 14px; }
+    .hero h1 { font-size: 2.3rem; font-weight: 700; color: #222; line-height: 1.2; letter-spacing: -0.8px; margin-bottom: 12px; }
+    .hero p { font-size: 0.97rem; color: #717171; line-height: 1.65; max-width: 500px; margin: 0 auto; }
 
     /* ── CONTAINER ── */
-    .container {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: 0 24px 80px;
-    }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
 
     /* ── CARD ── */
-    .card {
-      background: #ffffff;
-      border-radius: 16px;
-      padding: 36px 40px;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
-      border: 1px solid #ebebeb;
-    }
-    .card-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #222222;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .card-title::before {
-      content: "";
-      display: inline-block;
-      width: 3px;
-      height: 16px;
-      background: #FF385C;
-      border-radius: 2px;
-    }
+    .card { background: #fff; border-radius: 16px; padding: 34px 38px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); border: 1px solid #ebebeb; }
+    .card-title { font-size: 1rem; font-weight: 600; color: #222; margin-bottom: 22px; display: flex; align-items: center; gap: 8px; }
+    .card-title::before { content: ""; display: inline-block; width: 3px; height: 16px; background: #FF385C; border-radius: 2px; }
 
-    /* ── FORM GRID ── */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
-    }
+    /* ── FORM ── */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
     @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+    label.field-label { display: block; font-size: 0.82rem; font-weight: 600; color: #222; margin-bottom: 7px; }
+    .field-hint { font-size: 0.75rem; color: #717171; font-weight: 400; }
 
-    label.field-label {
-      display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #222222;
-      margin-bottom: 8px;
-      letter-spacing: 0.1px;
-    }
-    .field-hint {
-      font-size: 0.75rem;
-      color: #717171;
-      font-weight: 400;
-    }
-
-    /* ── UPLOAD AREA ── */
-    .upload-area {
-      border: 2px dashed #dddddd;
-      border-radius: 12px;
-      padding: 32px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      background: #fafafa;
-      min-height: 160px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .upload-area:hover, .upload-area.dragover {
-      border-color: #FF385C;
-      background: #fff5f6;
-    }
+    .upload-area { border: 2px dashed #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: #fafafa; min-height: 158px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .upload-area:hover, .upload-area.dragover { border-color: #FF385C; background: #fff5f6; }
     .upload-area input { display: none; }
-    .upload-icon {
-      width: 44px;
-      height: 44px;
-      background: #f7f7f7;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-      font-size: 1.3rem;
-    }
-    .upload-main-text {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: #222222;
-      margin-bottom: 4px;
-    }
-    .upload-hint-text { font-size: 0.78rem; color: #717171; }
-    .upload-filename {
-      font-size: 0.82rem;
-      color: #FF385C;
-      font-weight: 600;
-      margin-top: 10px;
-      word-break: break-all;
-    }
+    .upload-icon { width: 44px; height: 44px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.25rem; }
+    .upload-main { font-size: 0.88rem; font-weight: 500; color: #222; margin-bottom: 3px; }
+    .upload-hint { font-size: 0.76rem; color: #717171; }
+    .upload-filename { font-size: 0.81rem; color: #FF385C; font-weight: 600; margin-top: 8px; word-break: break-all; }
 
-    /* ── TEXTAREA ── */
-    textarea {
-      width: 100%;
-      min-height: 160px;
-      border: 1.5px solid #dddddd;
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: vertical;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      color: #222222;
-      background: #ffffff;
-      line-height: 1.5;
-    }
-    textarea:focus {
-      outline: none;
-      border-color: #FF385C;
-      box-shadow: 0 0 0 3px rgba(255, 56, 92, 0.1);
-    }
-    textarea::placeholder { color: #b0b0b0; }
+    textarea { width: 100%; min-height: 158px; border: 1.5px solid #ddd; border-radius: 12px; padding: 13px 15px; font-size: 0.89rem; font-family: inherit; resize: vertical; transition: border-color .2s, box-shadow .2s; color: #222; line-height: 1.5; }
+    textarea:focus { outline: none; border-color: #FF385C; box-shadow: 0 0 0 3px rgba(255,56,92,0.1); }
+    textarea::placeholder { color: #bbb; }
 
-    /* ── ANALYZE BUTTON ── */
-    .btn-analyze {
-      margin-top: 28px;
-      width: 100%;
-      padding: 16px;
-      background: #FF385C;
-      color: #ffffff;
-      border: none;
-      border-radius: 12px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      letter-spacing: 0.2px;
-      transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      box-shadow: 0 4px 12px rgba(255, 56, 92, 0.3);
-    }
-    .btn-analyze:hover:not(:disabled) {
-      background: #e0314f;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(255, 56, 92, 0.35);
-    }
-    .btn-analyze:active:not(:disabled) { transform: translateY(0); }
-    .btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+    .field-tip { font-size: 0.74rem; color: #717171; margin-top: 5px; }
 
-    /* ── SPINNER ── */
-    .spinner {
-      width: 18px; height: 18px;
-      border: 2.5px solid rgba(255, 255, 255, 0.35);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      display: none;
-    }
+    .btn-analyze { margin-top: 26px; width: 100%; padding: 15px; background: #FF385C; color: #fff; border: none; border-radius: 12px; font-size: 0.94rem; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; box-shadow: 0 4px 12px rgba(255,56,92,.28); }
+    .btn-analyze:hover:not(:disabled) { background: #e0314f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,56,92,.35); }
+    .btn-analyze:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── INFO BOXES ── */
-    .info-box {
-      border-radius: 12px;
-      padding: 12px 18px;
-      font-size: 0.84rem;
-      margin-top: 16px;
-      display: none;
-    }
-    .info-box.demo {
-      background: #fff8e1;
-      border: 1px solid #ffe082;
-      color: #795548;
-    }
-    .info-box.file-stats {
-      background: #f0f9ff;
-      border: 1px solid #bae6fd;
-      color: #0369a1;
-    }
-    .info-box.error {
-      background: #fff1f2;
-      border: 1px solid #fecdd3;
-      color: #be123c;
-    }
+    .ibox { border-radius: 12px; padding: 11px 16px; font-size: 0.83rem; margin-top: 14px; display: none; }
+    .ibox.demo  { background: #fff8e1; border: 1px solid #ffe082; color: #795548; }
+    .ibox.stats { background: #f0f9ff; border: 1px solid #bae6fd; color: #0369a1; }
+    .ibox.error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
 
     /* ── RESULTS ── */
-    #results { display: none; margin-top: 28px; }
+    #results { display: none; margin-top: 26px; }
+    .divider { height: 1px; background: #ebebeb; margin: 22px 0; }
 
     /* ── TABS ── */
-    .tabs {
-      display: flex;
-      gap: 4px;
-      border-bottom: 2px solid #ebebeb;
-      margin-bottom: 24px;
-    }
-    .tab {
-      padding: 10px 22px;
-      border: none;
-      background: none;
-      font-size: 0.88rem;
-      font-weight: 500;
-      color: #717171;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -2px;
-      transition: color 0.15s, border-color 0.15s;
-      border-radius: 6px 6px 0 0;
-      font-family: inherit;
-    }
+    .tabs { display: flex; gap: 2px; border-bottom: 2px solid #ebebeb; margin-bottom: 24px; }
+    .tab { padding: 10px 20px; border: none; background: none; font-size: 0.87rem; font-weight: 500; color: #717171; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; font-family: inherit; white-space: nowrap; }
     .tab.active { color: #FF385C; border-color: #FF385C; }
-    .tab:hover:not(.active) { color: #222222; background: #fafafa; }
+    .tab:hover:not(.active) { color: #222; background: #fafafa; }
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ── BPMN VIEWER ── */
-    .bpmn-toolbar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 14px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .btn-sm {
-      padding: 7px 14px;
-      background: #ffffff;
-      border: 1.5px solid #dddddd;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      color: #222222;
-      font-family: inherit;
-    }
-    .btn-sm:hover { background: #f7f7f7; border-color: #bbbbbb; }
-    .btn-dl {
-      background: #222222;
-      color: #ffffff;
-      border-color: #222222;
-      margin-left: auto;
-    }
-    .btn-dl:hover { background: #444444; border-color: #444444; }
+    /* ── BPMN DUAL VIEW ── */
+    .bpmn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 780px) { .bpmn-grid { grid-template-columns: 1fr; } }
 
-    #bpmn-canvas {
-      width: 100%;
-      height: 480px;
-      border: 1.5px solid #ebebeb;
-      border-radius: 12px;
-      background: #ffffff;
-      overflow: hidden;
-    }
-    .bpmn-error {
-      display: none;
-      margin-top: 10px;
-      padding: 12px 16px;
-      background: #fff1f2;
-      border: 1px solid #fecdd3;
-      border-radius: 10px;
-      color: #be123c;
-      font-size: 0.83rem;
-    }
+    .bpmn-card { background: #fff; border: 1.5px solid #ebebeb; border-radius: 14px; overflow: hidden; }
+    .bpmn-card-header { padding: 12px 16px 10px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+    .bpmn-card-label { font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .badge-asis { color: #b45309; background: #fef3c7; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
+    .badge-tobe { color: #065f46; background: #d1fae5; border-radius: 6px; padding: 2px 8px; font-size: 0.72rem; font-weight: 600; }
+    .bpmn-toolbar { display: flex; gap: 5px; }
+    .btn-xs { padding: 4px 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px; font-size: 0.75rem; font-weight: 500; cursor: pointer; color: #222; font-family: inherit; transition: background .1s; }
+    .btn-xs:hover { background: #f7f7f7; }
+    .btn-xs.dl { background: #222; color: #fff; border-color: #222; }
+    .btn-xs.dl:hover { background: #444; }
+    .bpmn-canvas { width: 100%; height: 280px; background: #fafafa; }
+    .bpmn-err { display: none; padding: 8px 14px; background: #fff1f2; color: #be123c; font-size: 0.78rem; border-top: 1px solid #fecdd3; }
 
-    /* ── USE CASE ── */
-    .uc-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .uc-header-title { font-weight: 600; color: #222222; font-size: 0.9rem; }
-    .uc-body {
-      background: #ffffff;
-      border: 1.5px solid #ebebeb;
-      border-radius: 12px;
-      padding: 28px 32px;
-      max-height: 600px;
-      overflow-y: auto;
-      line-height: 1.75;
-      font-size: 0.91rem;
-      color: #222222;
-    }
-    .uc-body h1 { font-size: 1.25rem; font-weight: 700; margin-bottom: 6px; color: #222222; }
-    .uc-body h2 { font-size: 0.95rem; font-weight: 700; color: #FF385C; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-    .uc-body h3 { font-size: 0.9rem; font-weight: 600; color: #222222; margin: 14px 0 6px; }
-    .uc-body p  { margin-bottom: 8px; color: #444444; }
-    .uc-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.84rem; }
-    .uc-body th { background: #222222; color: #ffffff; padding: 10px 14px; text-align: left; font-weight: 500; font-size: 0.82rem; }
-    .uc-body td { padding: 9px 14px; border-bottom: 1px solid #ebebeb; color: #444444; }
-    .uc-body tr:last-child td { border-bottom: none; }
-    .uc-body tr:nth-child(even) td { background: #fafafa; }
-    .uc-body ul, .uc-body ol { padding-left: 22px; margin-bottom: 10px; color: #444444; }
-    .uc-body li { margin-bottom: 4px; }
-    .uc-body strong, .uc-body b { color: #222222; font-weight: 600; }
-    .uc-body hr { border: none; border-top: 1px solid #ebebeb; margin: 20px 0; }
-    .uc-body code { background: #f7f7f7; padding: 2px 6px; border-radius: 4px; font-size: 0.84em; color: #FF385C; }
+    /* ── SPEC / RTM ── */
+    .doc-body { background: #fff; border: 1.5px solid #ebebeb; border-radius: 12px; padding: 28px 32px; max-height: 680px; overflow-y: auto; line-height: 1.75; font-size: 0.9rem; color: #222; }
+    .doc-body h1 { font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; }
+    .doc-body h2 { font-size: 0.92rem; font-weight: 700; color: #FF385C; margin: 22px 0 8px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .doc-body h3 { font-size: 0.88rem; font-weight: 600; color: #222; margin: 14px 0 5px; }
+    .doc-body p  { margin-bottom: 8px; color: #444; }
+    .doc-body table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.83rem; }
+    .doc-body th { background: #222; color: #fff; padding: 9px 13px; text-align: left; font-weight: 500; font-size: 0.8rem; }
+    .doc-body td { padding: 8px 13px; border-bottom: 1px solid #ebebeb; color: #444; vertical-align: top; }
+    .doc-body tr:last-child td { border-bottom: none; }
+    .doc-body tr:nth-child(even) td { background: #fafafa; }
+    .doc-body ul, .doc-body ol { padding-left: 20px; margin-bottom: 9px; color: #444; }
+    .doc-body li { margin-bottom: 3px; }
+    .doc-body strong, .doc-body b { color: #222; font-weight: 600; }
+    .doc-body hr { border: none; border-top: 1px solid #ebebeb; margin: 18px 0; }
+    .doc-body code { background: #f7f7f7; padding: 1px 5px; border-radius: 4px; font-size: 0.84em; color: #FF385C; }
 
-    /* ── DIVIDER ── */
-    .divider { height: 1px; background: #ebebeb; margin: 28px 0; }
+    .doc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+    .doc-header-title { font-weight: 600; color: #222; font-size: 0.88rem; }
+    .btn-dl { padding: 7px 14px; background: #222; color: #fff; border: none; border-radius: 8px; font-size: 0.78rem; font-weight: 500; cursor: pointer; font-family: inherit; transition: background .15s; }
+    .btn-dl:hover { background: #444; }
 
     /* ── FOOTER ── */
-    .footer {
-      text-align: center;
-      font-size: 0.78rem;
-      color: #aaaaaa;
-      padding: 32px 0 16px;
-    }
+    .footer { text-align: center; font-size: 0.76rem; color: #aaa; padding: 28px 0 12px; }
     .footer span { color: #FF385C; }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header class="header">
   <a class="logo" href="/">
     <div class="logo-mark">
@@ -427,104 +135,130 @@
     </div>
     <div class="logo-text">
       <span class="logo-name">B<span>A</span>lance.ai</span>
-      <span class="logo-sub">CRM Streamlining & Funnel Architecture</span>
+      <span class="logo-sub">Business Process Documentation Generator</span>
     </div>
   </a>
   <div class="header-badge">Groq · llama-3.1-8b</div>
 </header>
 
-<!-- HERO -->
 <div class="hero">
-  <span class="hero-eyebrow">Senior BA Methodology</span>
-  <h1>Превратите хаос воронки<br/>в системный процесс</h1>
-  <p>Загрузите CRM-данные, опишите узкое место — получите BPMN-схему и Use Case по стандарту Коберна от Senior BA.</p>
+  <span class="hero-eyebrow">Universal Process Intelligence</span>
+  <h1>Проектная документация<br/>из любых бизнес-данных</h1>
+  <p>Загрузите таблицу любого процесса — получите As-Is и To-Be BPMN, полную спецификацию требований и матрицу трассировки RTM.</p>
 </div>
 
-<!-- MAIN FORM -->
 <div class="container">
   <div class="card">
     <div class="card-title">Входные данные</div>
     <div class="form-grid">
       <div>
-        <label class="field-label">CRM-данные <span class="field-hint">(CSV / Excel)</span></label>
+        <label class="field-label">Файл с данными <span class="field-hint">(любой бизнес-процесс)</span></label>
         <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
           <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="onFileSelected(this)"/>
           <div class="upload-icon">📂</div>
-          <div class="upload-main-text">Нажмите или перетащите файл</div>
-          <div class="upload-hint-text">.csv, .xlsx, .xls — данные не покидают сервер</div>
+          <div class="upload-main">Нажмите или перетащите файл</div>
+          <div class="upload-hint">.csv, .xlsx, .xls — данные не покидают сервер</div>
           <div class="upload-filename" id="file-name"></div>
         </div>
       </div>
       <div>
-        <label class="field-label">Описание проблемы <span class="field-hint">(необязательно — обнаружим автоматически)</span></label>
-        <textarea id="problem" placeholder="Необязательно: если загружен файл, проблема определяется автоматически. Можно добавить контекст вручную — например, «Менеджеры игнорируют SLA» или «Нет интеграции с телефонией»."></textarea>
-        <div style="font-size:0.75rem;color:#717171;margin-top:6px;">💡 Без файла — опишите проблему текстом. С файлом — поле не обязательно.</div>
+        <label class="field-label">Контекст / проблема <span class="field-hint">(необязательно)</span></label>
+        <textarea id="problem" placeholder="С файлом: поле необязательно — структура и проблема определяются автоматически.&#10;&#10;Без файла: опишите процесс и задачу, например: «Ручное согласование договоров занимает 14 дней, нет контроля версий»."></textarea>
+        <div class="field-tip">💡 С файлом — AI анализирует структуру данных автоматически. Поле можно оставить пустым.</div>
       </div>
     </div>
-
     <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
       <div class="spinner" id="spinner"></div>
-      <span id="btn-label">Сгенерировать процесс To-Be</span>
+      <span id="btn-label">Сгенерировать документацию</span>
     </button>
   </div>
 
-  <!-- INFO BOXES -->
-  <div class="info-box error" id="error-box"></div>
+  <div class="ibox error" id="error-box"></div>
 
-  <!-- RESULTS -->
   <div id="results">
-    <div class="info-box demo" id="demo-badge"></div>
-    <div class="info-box file-stats" id="file-stats-box">
-      <span id="file-stats-text"></span>
-    </div>
-    <div class="info-box auto-problem" id="auto-problem-box" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:12px 18px;font-size:0.84rem;margin-top:8px;">
-      <strong>🤖 Выявленная проблема (Data Mining):</strong> <span id="auto-problem-text"></span>
-    </div>
+    <div class="ibox demo"  id="demo-badge"></div>
+    <div class="ibox stats" id="stats-box"></div>
 
     <div class="divider"></div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('bpmn',this)">📊 BPMN-схема процесса</button>
-      <button class="tab"        onclick="switchTab('uc',this)">📄 Use Case / Артефакт BA</button>
+      <button class="tab active" onclick="switchTab('bpmn', this)">📊 BPMN As-Is vs To-Be</button>
+      <button class="tab"        onclick="switchTab('spec', this)">📋 Спецификация требований</button>
+      <button class="tab"        onclick="switchTab('rtm',  this)">🗂 Матрица RTM</button>
     </div>
 
-    <!-- BPMN tab -->
+    <!-- TAB 1: dual BPMN -->
     <div class="tab-panel active" id="tab-bpmn">
-      <div class="bpmn-toolbar">
-        <button class="btn-sm" onclick="bpmnZoom(1.2)">+ Увеличить</button>
-        <button class="btn-sm" onclick="bpmnZoom(0.8)">− Уменьшить</button>
-        <button class="btn-sm" onclick="bpmnFit()">По размеру</button>
-        <button class="btn-sm" onclick="bpmnReset()">1:1</button>
-        <button class="btn-sm btn-dl" onclick="downloadBpmn()">⬇ Скачать .bpmn</button>
+      <div class="bpmn-grid">
+
+        <!-- As-Is -->
+        <div class="bpmn-card">
+          <div class="bpmn-card-header">
+            <div class="bpmn-card-label">
+              <span class="badge-asis">AS-IS</span> Текущий процесс
+            </div>
+            <div class="bpmn-toolbar">
+              <button class="btn-xs" onclick="bpmnZoom('asis', 1.25)">＋</button>
+              <button class="btn-xs" onclick="bpmnZoom('asis', 0.8)">－</button>
+              <button class="btn-xs" onclick="bpmnFit('asis')">⊡</button>
+              <button class="btn-xs dl" onclick="downloadBpmn('asis')">↓ .bpmn</button>
+            </div>
+          </div>
+          <div class="bpmn-canvas" id="canvas_as_is"></div>
+          <div class="bpmn-err" id="err_asis"></div>
+        </div>
+
+        <!-- To-Be -->
+        <div class="bpmn-card">
+          <div class="bpmn-card-header">
+            <div class="bpmn-card-label">
+              <span class="badge-tobe">TO-BE</span> Целевой процесс
+            </div>
+            <div class="bpmn-toolbar">
+              <button class="btn-xs" onclick="bpmnZoom('tobe', 1.25)">＋</button>
+              <button class="btn-xs" onclick="bpmnZoom('tobe', 0.8)">－</button>
+              <button class="btn-xs" onclick="bpmnFit('tobe')">⊡</button>
+              <button class="btn-xs dl" onclick="downloadBpmn('tobe')">↓ .bpmn</button>
+            </div>
+          </div>
+          <div class="bpmn-canvas" id="canvas_to_be"></div>
+          <div class="bpmn-err" id="err_tobe"></div>
+        </div>
+
       </div>
-      <div id="bpmn-canvas"></div>
-      <div class="bpmn-error" id="bpmn-error"></div>
     </div>
 
-    <!-- Use Case tab -->
-    <div class="tab-panel" id="tab-uc">
-      <div class="uc-header">
-        <span class="uc-header-title">Use Case по методологии Коберна — To-Be артефакт</span>
-        <button class="btn-sm btn-dl" onclick="downloadUC()">⬇ Скачать .md</button>
+    <!-- TAB 2: Full Spec -->
+    <div class="tab-panel" id="tab-spec">
+      <div class="doc-header">
+        <span class="doc-header-title">Полная спецификация требований (4 уровня)</span>
+        <button class="btn-dl" onclick="downloadDoc('spec')">↓ Скачать .md</button>
       </div>
-      <div class="uc-body" id="uc-body"></div>
+      <div class="doc-body" id="spec-body"></div>
+    </div>
+
+    <!-- TAB 3: RTM -->
+    <div class="tab-panel" id="tab-rtm">
+      <div class="doc-header">
+        <span class="doc-header-title">Матрица трассировки требований (RTM · MoSCoW)</span>
+        <button class="btn-dl" onclick="downloadDoc('rtm')">↓ Скачать .md</button>
+      </div>
+      <div class="doc-body" id="rtm-body"></div>
     </div>
   </div>
 
-  <div class="footer">
-    Powered by <span>BAlance.ai</span> · Groq llama-3.1-8b-instant · Senior BA Methodology
-  </div>
+  <div class="footer">Powered by <span>BAlance.ai</span> · Groq llama-3.1-8b-instant · Universal Process Intelligence</div>
 </div>
 
-<!-- bpmn-js via CDN -->
+<!-- bpmn-js -->
 <script src="https://unpkg.com/bpmn-js@17.2.1/dist/bpmn-viewer.development.js"></script>
-<!-- marked.js for Markdown rendering -->
+<!-- marked.js -->
 <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
 
 <script>
-var _bpmnViewer = null;
-var _bpmnXml    = '';
-var _ucText     = '';
+var _viewers = { asis: null, tobe: null };
+var _xmls    = { asis: '', tobe: '' };
+var _docs    = { spec: '', rtm: '' };
 
 /* ── drag & drop ── */
 var dz = document.getElementById('drop-zone');
@@ -535,7 +269,6 @@ dz.addEventListener('drop', function(e){
   var f = e.dataTransfer.files[0];
   if(f){ document.getElementById('file-input').files = e.dataTransfer.files; onFileSelected(document.getElementById('file-input')); }
 });
-
 function onFileSelected(inp){
   var n = inp.files[0] ? inp.files[0].name : '';
   document.getElementById('file-name').textContent = n ? '✓ ' + n : '';
@@ -547,20 +280,22 @@ function switchTab(name, btn){
   document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
-  if(name === 'bpmn' && _bpmnViewer){
-    setTimeout(function(){ _bpmnViewer.get('canvas').zoom('fit-viewport', 'auto'); }, 50);
+  if(name === 'bpmn'){
+    setTimeout(function(){
+      if(_viewers.asis) _viewers.asis.get('canvas').zoom('fit-viewport','auto');
+      if(_viewers.tobe) _viewers.tobe.get('canvas').zoom('fit-viewport','auto');
+    }, 60);
   }
 }
 
 /* ── analyze ── */
 async function analyze(){
-  var btn     = document.getElementById('analyze-btn');
-  var spinner = document.getElementById('spinner');
-  var label   = document.getElementById('btn-label');
-  var errBox  = document.getElementById('error-box');
+  var btn    = document.getElementById('analyze-btn');
+  var label  = document.getElementById('btn-label');
+  var errBox = document.getElementById('error-box');
 
   btn.disabled = true;
-  spinner.style.display = 'block';
+  document.getElementById('spinner').style.display = 'block';
   label.textContent = 'Анализируем данные…';
   errBox.style.display = 'none';
   document.getElementById('results').style.display = 'none';
@@ -580,55 +315,42 @@ async function analyze(){
       return;
     }
 
-    _bpmnXml = data.bpmn_xml;
-    _ucText  = data.use_case;
+    _xmls.asis = data.bpmn_asis;
+    _xmls.tobe = data.bpmn_tobe;
+    _docs.spec = data.spec;
+    _docs.rtm  = data.rtm;
 
     /* demo badge */
     var badge = document.getElementById('demo-badge');
     if(data.demo){
-      badge.textContent = 'ℹ Демо-режим: ' + (data.demo_reason || 'API-ключ не задан') + '. Показан типовой шаблон.';
+      badge.textContent = 'ℹ Демо-режим: ' + (data.demo_reason || '') + '. Показан типовой шаблон.';
       badge.style.display = 'block';
     } else {
       badge.style.display = 'none';
     }
 
-    /* file stats + mining insights */
-    var statsBox = document.getElementById('file-stats-box');
+    /* stats */
+    var statsBox = document.getElementById('stats-box');
     if(data.file_stats){
-      var fs = data.file_stats;
+      var fs   = data.file_stats;
       var cols = fs.columns.slice(0, 6).join(', ');
-      if(fs.columns.length > 6) cols += ' +' + (fs.columns.length - 6) + ' ещё';
-
-      var insightParts = ['<strong>📊 Автоматический анализ данных:</strong><br/>'];
-      insightParts.push('<span style="color:#0369a1">' + fs.rows + ' строк · Колонки: ' + cols + '</span>');
-
-      if(fs.conversion !== null && fs.conversion !== undefined)
-        insightParts.push('&nbsp;·&nbsp;🎯 Конверсия: <strong>' + fs.conversion + '%</strong>');
-      if(fs.bottleneck_stage && fs.max_days !== null)
-        insightParts.push('&nbsp;·&nbsp;⚠ Бутылочное горлышко: <strong>' + fs.bottleneck_stage + '</strong> (' + fs.max_days + ' дней)');
-      else if(fs.max_days !== null)
-        insightParts.push('&nbsp;·&nbsp;⏱ Среднее время: <strong>' + fs.max_days + ' дней</strong>');
-      if(fs.top_reason)
-        insightParts.push('&nbsp;·&nbsp;❌ Топ причина отказа: <strong>' + fs.top_reason + '</strong>');
-
-      document.getElementById('file-stats-text').innerHTML = insightParts.join('');
+      if(fs.columns.length > 6) cols += ' +' + (fs.columns.length - 6);
+      var html = '<strong>📊 Таблица проанализирована:</strong> ' + fs.rows + ' строк · ' + fs.columns.length + ' колонок: ' + cols;
+      if(fs.insights && fs.insights.length){
+        html += '<br/><span style="opacity:.85">' + fs.insights.slice(0,3).join(' · ') + '</span>';
+      }
+      statsBox.innerHTML = html;
       statsBox.style.display = 'block';
     } else {
       statsBox.style.display = 'none';
     }
 
-    /* auto_problem hint */
-    var apBox = document.getElementById('auto-problem-box');
-    if(data.auto_problem){
-      document.getElementById('auto-problem-text').textContent = data.auto_problem;
-      apBox.style.display = 'block';
-    } else {
-      apBox.style.display = 'none';
-    }
-
     document.getElementById('results').style.display = 'block';
-    renderBpmn(_bpmnXml);
-    renderUC(_ucText);
+
+    renderBpmn('asis', _xmls.asis);
+    renderBpmn('tobe', _xmls.tobe);
+    renderDoc('spec', _docs.spec);
+    renderDoc('rtm',  _docs.rtm);
 
     /* reset to BPMN tab */
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
@@ -641,49 +363,57 @@ async function analyze(){
     errBox.style.display = 'block';
   } finally {
     btn.disabled = false;
-    spinner.style.display = 'none';
-    label.textContent = 'Сгенерировать процесс To-Be';
+    document.getElementById('spinner').style.display = 'none';
+    label.textContent = 'Сгенерировать документацию';
   }
 }
 
 /* ── BPMN rendering ── */
-function renderBpmn(xml){
-  var errDiv = document.getElementById('bpmn-error');
-  errDiv.style.display = 'none';
+function renderBpmn(key, xml){
+  var containerId = key === 'asis' ? '#canvas_as_is' : '#canvas_to_be';
+  var errId       = key === 'asis' ? 'err_asis' : 'err_tobe';
+  var errEl       = document.getElementById(errId);
+  errEl.style.display = 'none';
 
-  if(_bpmnViewer){ _bpmnViewer.destroy(); _bpmnViewer = null; }
-  _bpmnViewer = new BpmnJS({ container: '#bpmn-canvas' });
+  if(_viewers[key]){ _viewers[key].destroy(); _viewers[key] = null; }
+  _viewers[key] = new BpmnJS({ container: containerId });
 
-  _bpmnViewer.importXML(xml).then(function(result){
-    var canvas = _bpmnViewer.get('canvas');
-    canvas.zoom('fit-viewport', 'auto');
+  _viewers[key].importXML(xml).then(function(){
+    _viewers[key].get('canvas').zoom('fit-viewport', 'auto');
   }).catch(function(err){
-    errDiv.textContent = 'Ошибка рендеринга BPMN: ' + err.message;
-    errDiv.style.display = 'block';
+    errEl.textContent = 'Ошибка BPMN: ' + err.message;
+    errEl.style.display = 'block';
   });
 }
 
-function bpmnZoom(f){ if(_bpmnViewer){ var c=_bpmnViewer.get('canvas'); c.zoom(c.zoom()*f); } }
-function bpmnFit(){   if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom('fit-viewport','auto'); } }
-function bpmnReset(){ if(_bpmnViewer){ _bpmnViewer.get('canvas').zoom(1); } }
-
-/* ── Use Case rendering ── */
-function renderUC(md){
-  document.getElementById('uc-body').innerHTML = marked.parse(md || '');
+function bpmnZoom(key, f){
+  if(_viewers[key]){ var c = _viewers[key].get('canvas'); c.zoom(c.zoom() * f); }
+}
+function bpmnFit(key){
+  if(_viewers[key]){ _viewers[key].get('canvas').zoom('fit-viewport', 'auto'); }
 }
 
-/* ── downloads ── */
-function downloadBpmn(){
-  if(!_bpmnXml) return;
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([_bpmnXml], {type:'application/xml'}));
-  a.download = 'balance_ai_to_be.bpmn'; a.click();
+/* ── Doc rendering ── */
+function renderDoc(key, md){
+  document.getElementById(key + '-body').innerHTML = marked.parse(md || '');
 }
-function downloadUC(){
-  if(!_ucText) return;
+
+/* ── Downloads ── */
+function downloadBpmn(key){
+  var xml = _xmls[key];
+  if(!xml) return;
   var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([_ucText], {type:'text/markdown'}));
-  a.download = 'balance_ai_use_case.md'; a.click();
+  a.href = URL.createObjectURL(new Blob([xml], {type:'application/xml'}));
+  a.download = 'balance_ai_' + key + '.bpmn';
+  a.click();
+}
+function downloadDoc(key){
+  var text = _docs[key];
+  if(!text) return;
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type:'text/markdown'}));
+  a.download = 'balance_ai_' + key + '.md';
+  a.click();
 }
 </script>
 </body>
