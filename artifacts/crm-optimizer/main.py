@@ -1,11 +1,12 @@
 import os
 import re
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 import pandas as pd
 
-app = FastAPI(title="BAlance.ai — Business Process Documentation Generator")
+app = FastAPI(title="BAlance.ai — BPMN to Requirements Documentation Generator")
 _HTML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "index.html")
 
 # ---------------------------------------------------------------------------
@@ -37,374 +38,319 @@ def get_ai_client():
 
 
 # ---------------------------------------------------------------------------
-# UNIVERSAL DATA ANALYSIS — works with any tabular data
+# BPMN XML PARSER
 # ---------------------------------------------------------------------------
-def analyze_dataframe(df: pd.DataFrame) -> dict:
-    result = {
-        "total_rows": len(df),
-        "total_cols": len(df.columns),
-        "column_names": list(df.columns),
-        "context_str": "",
-        "insights": [],
+# Task element local-names we care about
+_TASK_TAGS = {
+    "task", "usertask", "servicetask", "scripttask", "manualtask",
+    "businessruletask", "sendtask", "receivetask", "calledactivity",
+    "subprocess",
+}
+_ACTOR_TAGS = {"participant", "lane"}
+_PROCESS_TAGS = {"process", "collaboration"}
+
+
+def _local(tag: str) -> str:
+    """Return the local name of an ElementTree tag (strips namespace URI)."""
+    return tag.split("}")[-1].lower() if "}" in tag else tag.lower()
+
+
+def _attr_name(el) -> str:
+    return (el.get("name") or "").strip()
+
+
+def parse_bpmn(content: bytes) -> dict:
+    """
+    Parse BPMN 2.0 XML and extract:
+      - tasks: list of task/step names
+      - actors: list of participant/lane names
+      - process_name: top-level process name
+      - raw_steps_text: comma-joined task names for prompting
+    Falls back to regex extraction if XML parse fails.
+    """
+    tasks, actors, process_name = [], [], ""
+
+    try:
+        root = ET.fromstring(content)
+
+        # Collect all elements by local tag
+        for el in root.iter():
+            local = _local(el.tag)
+            name  = _attr_name(el)
+
+            if local in _TASK_TAGS and name:
+                tasks.append(name)
+            elif local in _ACTOR_TAGS and name:
+                actors.append(name)
+            elif local == "process" and name and not process_name:
+                process_name = name
+            elif local == "collaboration" and name and not process_name:
+                process_name = name
+
+        # Deduplicate while preserving order
+        tasks  = list(dict.fromkeys(tasks))
+        actors = list(dict.fromkeys(actors))
+
+    except ET.ParseError:
+        # Fallback: regex extraction for malformed XML
+        text = content.decode("utf-8", errors="replace")
+        tasks  = re.findall(r'<(?:bpmn:)?(?:userTask|serviceTask|task|manualTask)[^>]+name="([^"]+)"', text)
+        actors = re.findall(r'<(?:bpmn:)?(?:participant|lane)[^>]+name="([^"]+)"', text)
+        m = re.search(r'<(?:bpmn:)?process[^>]+name="([^"]+)"', text)
+        process_name = m.group(1) if m else ""
+
+    return {
+        "tasks":           tasks,
+        "actors":          actors,
+        "process_name":    process_name,
+        "task_count":      len(tasks),
+        "actor_count":     len(actors),
+        "context_str":     _build_bpmn_context(tasks, actors, process_name),
     }
 
-    col_summaries = []
-    for col in df.columns[:15]:
-        dtype = str(df[col].dtype)
-        non_null = df[col].notna().sum()
-        fill_pct = round(non_null / len(df) * 100, 0) if len(df) > 0 else 0
-        if df[col].dtype == object:
-            n_unique = df[col].nunique()
-            top_vals = df[col].dropna().value_counts().head(3).index.tolist()
-            top_str = ", ".join(str(v) for v in top_vals)
-            col_summaries.append(
-                f"'{col}' (текст, {n_unique} уник., заполн. {fill_pct}%, топ: {top_str})"
-            )
-            if n_unique <= 20 and n_unique > 1:
-                result["insights"].append(f"Колонка «{col}»: категории — {top_str}")
-        else:
-            try:
-                mean_val = round(df[col].mean(), 2)
-                max_val = df[col].max()
-                col_summaries.append(
-                    f"'{col}' (число, среднее={mean_val}, макс={max_val}, заполн. {fill_pct}%)"
-                )
-                result["insights"].append(f"«{col}»: среднее {mean_val} (макс: {max_val})")
-            except Exception:
-                col_summaries.append(f"'{col}' (тип: {dtype}, заполн. {fill_pct}%)")
 
-    result["context_str"] = (
-        f"Таблица бизнес-процесса: {len(df)} строк, {len(df.columns)} колонок. "
-        f"Структура: {'; '.join(col_summaries[:10])}."
+def _build_bpmn_context(tasks: list, actors: list, process_name: str) -> str:
+    parts = []
+    if process_name:
+        parts.append(f"Название процесса: «{process_name}».")
+    if actors:
+        parts.append(f"Участники/роли: {', '.join(actors[:10])}.")
+    if tasks:
+        numbered = "; ".join(f"{i+1}. {t}" for i, t in enumerate(tasks[:25]))
+        parts.append(f"Шаги процесса ({len(tasks)} шт.): {numbered}.")
+    if not parts:
+        parts.append("BPMN-файл не содержит именованных шагов.")
+    return " ".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# SYSTEM PROMPT
+# ---------------------------------------------------------------------------
+_SYSTEM = """Ты — Senior Business Analyst и System Analyst с опытом в BPMN, разработке требований и управлении бэклогом. Тебе предоставлена структура бизнес-процесса, извлечённая из BPMN-файла.
+
+Твоя задача — декомпозировать этот визуальный процесс в текстовую проектную документацию на русском языке.
+
+Ответ строго в следующем формате — ТРИ раздела, каждый начинается с маркера НА ОТДЕЛЬНОЙ строке:
+
+---SECTION1---
+[содержимое]
+---SECTION2---
+[содержимое]
+---SECTION3---
+[содержимое]
+
+===== РАЗДЕЛ 1: ПОЛНАЯ СПЕЦИФИКАЦИЯ ТРЕБОВАНИЙ =====
+Markdown-документ по четырём уровням:
+
+# Спецификация требований
+
+## 1.1 Бизнес-требования (Business Requirements)
+- Бизнес-цели автоматизации данного процесса
+- Таблица: Метрика | As-Is (текущее) | To-Be (целевое) — с конкретными цифрами
+
+## 1.2 Пользовательские требования (User Requirements)
+- Use Case по Коберну на основе шагов BPMN
+- Таблица: Шаг | Актор | Действие | Результат
+- Предусловия, расширения, постусловия
+
+## 1.3 Функциональные требования (Functional Requirements)
+- FR-XX для каждого шага BPMN: валидации, интеграции, триггеры, уведомления
+
+## 1.4 Нефункциональные требования (Non-Functional Requirements)
+- NFR-XX: Производительность, Безопасность, Доступность, Интерфейс — с метриками
+
+===== РАЗДЕЛ 2: МАТРИЦА ТРАССИРОВКИ И ПРИОРИТИЗАЦИИ (MoSCoW RTM) =====
+Markdown-таблица, минимум 15 строк, привязанная к шагам исходного BPMN:
+
+# Матрица трассировки требований (RTM)
+
+| ID | Тип | Описание функциональной фичи | Связь с шагом BPMN | Приоритет |
+|----|-----|------------------------------|---------------------|-----------|
+[Must / Should / Could]
+
+===== РАЗДЕЛ 3: БЭКЛОГ ДЛЯ JIRA (User Stories) =====
+Готовые User Stories для разработчиков — по одной истории на каждый ключевой шаг BPMN:
+
+# Бэклог проекта — User Stories
+
+## US-XX: [Краткое название]
+**Роль:** [Актор из BPMN]
+**История:** Как [Роль], я хочу [Функционал], чтобы [Бизнес-ценность].
+
+**Критерии приёмки (Acceptance Criteria):**
+- [ ] AC-1: ...
+- [ ] AC-2: ...
+- [ ] AC-3: ...
+
+---
+
+ВАЖНО: Никаких пояснений вне трёх разделов. Маркеры ---SECTION1---, ---SECTION2---, ---SECTION3--- строго на отдельных строках. Всё содержимое строго на русском языке."""
+
+
+def _parse_ai_response(text: str) -> dict:
+    def extract_section(n, text):
+        start = f"---SECTION{n}---"
+        end   = f"---SECTION{n+1}---"
+        idx_s = text.find(start)
+        if idx_s == -1:
+            return ""
+        idx_s += len(start)
+        idx_e = text.find(end, idx_s)
+        chunk = text[idx_s: idx_e if idx_e != -1 else None]
+        return chunk.strip()
+
+    return {
+        "spec":    extract_section(1, text),
+        "rtm":     extract_section(2, text),
+        "backlog": extract_section(3, text),
+    }
+
+
+def _call_ai(bpmn_context: str, user_goals: str) -> dict:
+    client, model = get_ai_client()
+    if client is None:
+        return None
+    today = datetime.now().strftime("%d.%m.%Y")
+    user_msg = f"Сегодня: {today}.\n\n{bpmn_context}"
+    if user_goals.strip():
+        user_msg += f"\n\nДополнительные бизнес-цели: {user_goals.strip()}"
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user",   "content": user_msg},
+        ],
+        temperature=0.3,
+        max_tokens=4000,
     )
-    return result
+    return _parse_ai_response(str(resp.choices[0].message.content))
 
 
 # ---------------------------------------------------------------------------
-# MERMAID SYNTAX FIXER — strips markers, ensures node IDs, one declaration line
+# DEMO CONTENT
 # ---------------------------------------------------------------------------
-def fix_mermaid_syntax(raw: str) -> str:
-    # 1. Strip code fences
-    code = re.sub(r"```mermaid\s*", "", raw, flags=re.IGNORECASE)
-    code = re.sub(r"```\s*", "", code).strip()
-
-    if not code:
-        return "graph TD\n  A[Нет данных]"
-
-    lines = code.splitlines()
-    out   = ["graph TD"]   # always enforce a clean header
-    node_counter = [1]     # mutable for closure
-
-    def next_id():
-        nid = f"node{node_counter[0]}"
-        node_counter[0] += 1
-        return nid
-
-    for raw_line in lines:
-        line = raw_line.strip()
-
-        # Skip blank lines and any existing graph declaration
-        if not line or re.match(r"^(graph|flowchart)\s", line):
-            continue
-
-        # Skip pure comment lines
-        if line.startswith("%%"):
-            out.append("    " + line)
-            continue
-
-        # If the line contains a --> arrow it's a valid edge — keep as-is
-        if "-->" in line or "---" in line:
-            out.append("    " + line)
-            continue
-
-        # Bare round node: ((text)) with no ID → prepend generated ID
-        line = re.sub(r"^(\(\()", lambda m: next_id() + m.group(1), line)
-        # Bare round node: (text) with no ID → prepend generated ID
-        line = re.sub(r"^(\()", lambda m: next_id() + m.group(1), line)
-        # Bare square node: [text] with no ID → prepend generated ID
-        line = re.sub(r"^(\[)", lambda m: next_id() + m.group(1), line)
-        # Bare diamond: {text} with no ID → prepend generated ID
-        line = re.sub(r"^(\{)", lambda m: next_id() + m.group(1), line)
-
-        out.append("    " + line)
-
-    # Remove duplicate consecutive blank lines that could trip the parser
-    result_lines = []
-    for l in out:
-        if l.strip() == "" and result_lines and result_lines[-1].strip() == "":
-            continue
-        result_lines.append(l)
-
-    return "\n".join(result_lines)
-
-
-# ---------------------------------------------------------------------------
-# DEMO MERMAID CONTENT
-# ---------------------------------------------------------------------------
-DEMO_MERMAID_ASIS = """graph TD
-    A([🚀 Старт: Входящий лид]) --> B{Ручная квалификация менеджером}
-    B -->|Целевой клиент| C[Назначение менеджера вручную]
-    B -->|Нецелевой| Z1([❌ Потеря лида])
-    C --> D[Первый звонок по телефону]
-    D -->|Дозвонились| E[КП в Excel — ручная работа]
-    D -->|Не дозвонились| F[Повторная попытка через 3 дня]
-    F --> G{Третья попытка?}
-    G -->|Да| D
-    G -->|Нет| Z2([❌ Потеря: недозвон])
-    E --> H[Согласование КП с руководителем]
-    H -->|Согласовано| I[Отправка КП клиенту по email]
-    H -->|Отказано| J[Доработка КП]
-    J --> H
-    I --> K{Ответ клиента}
-    K -->|Интерес| L[Переговоры — несколько встреч]
-    K -->|Игнор 7 дней| M[Ручной follow-up]
-    M --> K
-    K -->|Отказ| Z3([❌ Lost: Цена или конкурент])
-    L --> N[Подготовка договора юристом]
-    N --> O{Согласование юристом}
-    O -->|Замечания| P[Правки договора]
-    P --> O
-    O --> Q[Подписание договора вручную]
-    Q --> R[Выставление счёта вручную в 1С]
-    R --> S{Оплата поступила?}
-    S -->|Оплачено| T([✅ Сделка: Won])
-    S -->|Просрочка 3 дня| U[Ручное напоминание об оплате]
-    U --> S
-    S -->|Просрочка 30 дней| Z4([❌ Потеря: неплатёж])"""
-
-DEMO_MERMAID_TOBE = """graph TD
-    A([⚡ Триггер: Лид из любого канала]) --> B[Авто-обогащение: компания, должность, сайт]
-    B --> C{AI-скоринг по ICP}
-    C -->|Score ≥ 70 — горячий| D[Авто-назначение менеджеру по алгоритму загруженности]
-    C -->|Score 40–69 — тёплый| E[Нуртеринг: авто-серия писем CRM]
-    C -->|Score < 40 — холодный| F[Авто-архивация + ремаркетинг]
-    D --> G[Авто-уведомление менеджеру в Slack + задача в CRM]
-    G --> H{Контакт ≤ 2ч по SLA?}
-    H -->|Нет| I[Авто-эскалация руководителю]
-    H -->|Да| J[Звонок + авто-транскрипция AI]
-    I --> J
-    J --> K[Авто-генерация КП из шаблона CRM]
-    K --> L[Авто-отправка + трекинг открытий]
-    L --> M{КП открыто?}
-    M -->|Нет, 48ч| N[Авто-follow-up SMS + email]
-    M -->|Да| O[Авто-уведомление менеджеру: клиент читает]
-    N --> M
-    O --> P[Онлайн-встреча: Calendly-интеграция]
-    P --> Q[Авто-генерация договора из шаблона]
-    Q --> R[E-sign: DocuSign / Контур.Подпись]
-    R --> S[Авто-счёт: интеграция с 1С / Сбер Бизнес]
-    S --> T{Предиктивный риск-анализ оплаты}
-    T -->|Риск высокий| U[Авто-алерт: руководитель + финансист]
-    T -->|Риск низкий| V[Авто-мониторинг: банк-интеграция]
-    U --> W[Персональное общение + оффер]
-    W --> V
-    V --> X([✅ Won: авто-закрытие + аналитика в дашборде])"""
-
 DEMO_SPEC = """# Спецификация требований — Демо-режим
 
 **Дата:** {date} | **Статус:** Демо | **Источник:** BAlance.ai
 
 ---
 
-## 1. Бизнес-требования (Business Requirements)
+## 1.1 Бизнес-требования (Business Requirements)
 
-**Цель:** Сократить время обработки сделки на 60% и устранить ручные операции в ключевых точках процесса.
+**Цель:** Автоматизировать процесс согласования заявок и устранить ручной контроль на каждом шаге.
 
 | Метрика | As-Is | To-Be |
 |---------|-------|-------|
-| Время от лида до КП | 3–5 дней | < 2 часов |
-| Доля ручного труда | ~80% | < 15% |
-| Конверсия лид→сделка | 12% | > 25% |
-| SLA первого контакта | нет контроля | ≤ 2 часов |
+| Время согласования | 5–7 рабочих дней | < 4 часов |
+| Доля ручных операций | ~75% | < 10% |
+| Ошибки при передаче данных | ~12% | < 1% |
+| SLA первичной обработки | нет контроля | ≤ 2 часов |
 
 ---
 
-## 2. Пользовательские требования (User Requirements)
+## 1.2 Пользовательские требования (User Requirements)
 
-**UC-01: Автоматизация обработки входящего лида**
+**UC-01: Подача и согласование заявки**
 
 | Шаг | Актор | Действие | Результат |
 |-----|-------|----------|-----------|
-| 1 | Система | Получает лид из любого канала | Лид создан в CRM |
-| 2 | AI-модуль | Скоринг и обогащение данных | Приоритет установлен |
-| 3 | Система | Назначает менеджера по алгоритму | Задача поставлена |
-| 4 | Менеджер | Первый контакт ≤ 2ч | Встреча запланирована |
-| 5 | Система | Генерирует КП из шаблона | КП отправлено + трекинг |
+| 1 | Инициатор | Создаёт заявку в системе | Заявка зарегистрирована |
+| 2 | Система | Авто-валидация полей | Заявка направлена на согласование |
+| 3 | Руководитель | Рассматривает и согласует | Статус изменён |
+| 4 | Система | Отправляет уведомление | Инициатор получает результат |
 
-- **Предусловия:** Лид зарегистрирован в системе
-- **Расширения:** При нарушении SLA — авто-эскалация руководителю
-- **Постусловия:** Сделка переведена в следующую стадию
-
----
-
-## 3. Функциональные требования (Functional Requirements)
-
-- **FR-01** Авто-скоринг входящих лидов по модели ICP (Ideal Customer Profile)
-- **FR-02** Авто-назначение менеджера с учётом загруженности и специализации
-- **FR-03** SLA-контроль первого контакта с эскалацией при нарушении
-- **FR-04** Авто-генерация КП из шаблонов CRM с трекингом открытий
-- **FR-05** Авто-генерация договора + E-sign интеграция
-- **FR-06** Авто-выставление счёта через интеграцию с 1С / банком
-- **FR-07** Предиктивный анализ риска срыва сделки
-- **FR-08** Дашборд воронки с конверсией по каждому этапу в реальном времени
+- **Предусловия:** Пользователь авторизован, шаблон заявки настроен
+- **Расширения:** Если согласующий недоступен > 24ч — авто-эскалация
+- **Постусловия:** Заявка в финальном статусе, аудит-лог сохранён
 
 ---
 
-## 4. Нефункциональные требования (Non-Functional Requirements)
+## 1.3 Функциональные требования (Functional Requirements)
 
-- **NFR-01 Производительность:** Скоринг лида ≤ 5 сек, генерация КП ≤ 30 сек
-- **NFR-02 Безопасность:** Шифрование данных AES-256, авторизация OAuth 2.0, журнал аудита
-- **NFR-03 Доступность:** SLA ≥ 99.5% uptime, RTO ≤ 1 час
-- **NFR-04 Масштабируемость:** Поддержка до 10 000 лидов/месяц без деградации
-- **NFR-05 Интерфейс:** Мобильная версия, время отклика UI < 200 мс, WCAG 2.1 AA
+- **FR-01** Форма создания заявки с обязательными и необязательными полями
+- **FR-02** Авто-валидация заполненности и форматов при отправке
+- **FR-03** Маршрутизация заявки согласно матрице согласований
+- **FR-04** Уведомления по email/push при смене статуса
+- **FR-05** SLA-таймер с авто-эскалацией при нарушении срока
+- **FR-06** Полный аудит-лог всех действий по заявке
+
+---
+
+## 1.4 Нефункциональные требования (Non-Functional Requirements)
+
+- **NFR-01 Производительность:** Обработка заявки ≤ 3 сек при 500 req/min
+- **NFR-02 Безопасность:** Шифрование AES-256, RBAC, журнал доступа
+- **NFR-03 Доступность:** SLA ≥ 99.5%, RTO ≤ 1 час
+- **NFR-04 Интерфейс:** Адаптивный дизайн, время отклика UI < 200 мс
 """
 
 DEMO_RTM = """# Матрица трассировки требований (RTM)
 
-| ID | Тип | Описание фичи | Приоритет |
-|----|-----|---------------|-----------|
-| BR-01 | Бизнес | Сократить время лид→КП до 2 часов | Must |
-| BR-02 | Бизнес | Повысить конверсию лид→сделка до 25% | Must |
-| BR-03 | Бизнес | Устранить ручной ввод данных на 85% | Must |
-| BR-04 | Бизнес | SLA первого контакта ≤ 2 часов | Should |
-| UR-01 | Пользователь | AI-скоринг и квалификация лидов | Must |
-| UR-02 | Пользователь | Авто-назначение менеджеров | Must |
-| UR-03 | Пользователь | Авто-генерация КП из шаблона | Must |
-| UR-04 | Пользователь | Трекинг открытия КП | Should |
-| UR-05 | Пользователь | E-sign интеграция (DocuSign/Контур) | Should |
-| FR-01 | Функциональное | Модуль скоринга ICP | Must |
-| FR-02 | Функциональное | Алгоритм распределения лидов | Must |
-| FR-03 | Функциональное | Авто-генерация КП + договора | Must |
-| FR-04 | Функциональное | Интеграция с 1С / банком | Should |
-| FR-05 | Функциональное | Предиктивная аналитика риска | Could |
-| FR-06 | Функциональное | Дашборд конверсии в реальном времени | Should |
-| NFR-01 | Нефункциональное | SLA скоринга ≤ 5 сек | Must |
-| NFR-02 | Нефункциональное | Шифрование AES-256 + OAuth 2.0 | Must |
-| NFR-03 | Нефункциональное | Доступность ≥ 99.5% uptime | Must |
-| NFR-04 | Нефункциональное | Масштаб: 10 000 лидов/месяц | Should |
-| NFR-05 | Нефункциональное | Мобильная версия + WCAG 2.1 AA | Could |
+| ID | Тип | Описание функциональной фичи | Связь с шагом BPMN | Приоритет |
+|----|-----|------------------------------|--------------------|-----------|
+| BR-01 | Бизнес | Сократить время согласования до 4 ч | Весь процесс | Must |
+| BR-02 | Бизнес | Устранить ручной ввод данных на 75% | Шаг 1–2 | Must |
+| BR-03 | Бизнес | SLA первичной обработки ≤ 2 ч | Шаг 2 | Must |
+| UR-01 | Пользователь | Форма создания заявки с валидацией | Шаг 1 | Must |
+| UR-02 | Пользователь | Авто-уведомления при смене статуса | Шаг 4 | Must |
+| UR-03 | Пользователь | Просмотр истории согласований | Шаг 3–4 | Should |
+| FR-01 | Функциональное | Авто-валидация полей формы | Шаг 2 | Must |
+| FR-02 | Функциональное | Маршрутизация по матрице согласований | Шаг 3 | Must |
+| FR-03 | Функциональное | SLA-таймер с авто-эскалацией | Шаг 3 | Must |
+| FR-04 | Функциональное | Email/Push уведомления | Шаг 4 | Should |
+| FR-05 | Функциональное | Аудит-лог всех действий | Все шаги | Should |
+| NFR-01 | Нефункциональное | Производительность ≤ 3 сек | Все шаги | Must |
+| NFR-02 | Нефункциональное | RBAC + шифрование AES-256 | Все шаги | Must |
+| NFR-03 | Нефункциональное | SLA ≥ 99.5% uptime | Вся система | Must |
+| NFR-04 | Нефункциональное | Адаптивный UI | Шаг 1, 4 | Could |
 """
 
-# ---------------------------------------------------------------------------
-# System prompt — Mermaid-based output
-# ---------------------------------------------------------------------------
-_SYSTEM = """Ты — Senior Business Analyst и Solution Architect. Анализируешь структуру любой бизнес-таблицы и генерируешь полную проектную документацию.
+DEMO_BACKLOG = """# Бэклог проекта — User Stories
 
-Ответ строго в следующем формате — ЧЕТЫРЕ раздела, каждый начинается с маркера НА ОТДЕЛЬНОЙ строке:
+## US-01: Создание заявки
+**Роль:** Инициатор
+**История:** Как Инициатор, я хочу создать заявку через веб-форму, чтобы запустить процесс согласования без участия администратора.
 
-MERMAID_ASIS:
-[код Mermaid для As-Is диаграммы]
-MERMAID_TOBE:
-[код Mermaid для To-Be диаграммы]
-SPEC:
-[полная спецификация требований в Markdown]
-RTM:
-[матрица трассировки в Markdown]
+**Критерии приёмки (Acceptance Criteria):**
+- [ ] AC-1: Форма доступна после авторизации и содержит все обязательные поля
+- [ ] AC-2: При отправке незаполненных обязательных полей отображается ошибка
+- [ ] AC-3: Успешно созданная заявка получает уникальный номер и статус «Новая»
 
-===== КАНОНИЧЕСКИЙ СИНТАКСИС MERMAID — ОБЯЗАТЕЛЬНО К СОБЛЮДЕНИЮ =====
-КАЖДЫЙ УЗЕЛ ДОЛЖЕН ИМЕТЬ БУКВЕННО-ЦИФРОВОЙ ID. Пример правильного кода:
+---
 
-graph TD
-  A((Старт)) --> B[Ручная квалификация]
-  B --> C{Сделка выиграна?}
-  C -->|Да| D[Закрытие сделки]
-  C -->|Нет| E[Потеря лида]
-  D --> F((Конец))
+## US-02: Авто-валидация данных
+**Роль:** Система
+**История:** Как Система, я хочу автоматически проверять корректность данных заявки, чтобы исключить ошибки до начала согласования.
 
-ЗАПРЕЩЕНО: писать ((Текст)) или [Текст] без ID перед скобками.
-ЗАПРЕЩЕНО: помещать несколько узлов/связей на одну строку.
-ЗАПРЕЩЕНО: использовать " кавычки, ; точки с запятой, < > внутри меток узлов.
-ОБЯЗАТЕЛЬНО: каждая связь --> на отдельной строке.
-ОБЯЗАТЕЛЬНО: начинать файл ровно со строки "graph TD", ничего до неё.
+**Критерии приёмки (Acceptance Criteria):**
+- [ ] AC-1: Проверяются форматы всех полей (дата, сумма, email)
+- [ ] AC-2: При ошибке пользователь видит конкретное сообщение с указанием поля
+- [ ] AC-3: Валидная заявка немедленно направляется согласующему
 
-===== ПРАВИЛА ДЛЯ MERMAID_ASIS =====
-- Ровно одна строка заголовка: graph TD
-- Минимум 15 узлов и развилок, все с уникальными ID
-- Отображает ТЕКУЩИЙ ручной/хаотичный процесс по колонкам файла
-- Показывай: ручные операции, ветвления при отказах, зависания, потери конверсии, многократные согласования
-- Форма узлов: A((Старт/Конец)), B[Задача], C{Решение}
-- Подписи стрелок: -->|Да| -->|Нет| -->|Отказ|
+---
 
-===== ПРАВИЛА ДЛЯ MERMAID_TOBE =====
-- Те же строгие правила синтаксиса что для ASIS
-- Минимум 15 узлов, все с уникальными ID
-- Отображает ЦЕЛЕВОЙ автоматизированный процесс
-- Показывай: авто-триггеры, AI-модули, интеграции, SLA-контроль, эскалации
-- Все подписи на русском языке
+## US-03: Согласование заявки
+**Роль:** Руководитель
+**История:** Как Руководитель, я хочу получать уведомления о новых заявках и согласовывать их в один клик, чтобы не тратить время на поиск документов.
 
-===== ПРАВИЛА ДЛЯ SPEC =====
-Markdown-документ строго по 4 уровням:
+**Критерии приёмки (Acceptance Criteria):**
+- [ ] AC-1: Уведомление приходит в течение 5 минут после поступления заявки
+- [ ] AC-2: Из уведомления можно перейти к заявке и принять решение без дополнительной авторизации
+- [ ] AC-3: При нарушении SLA (> 24ч) система автоматически эскалирует заявку
 
-# Спецификация требований
+---
 
-## 1. Бизнес-требования (Business Requirements)
-[Цель, бизнес-эффект, таблица метрик As-Is vs To-Be с конкретными цифрами из данных файла]
+## US-04: Уведомление об итоге
+**Роль:** Инициатор
+**История:** Как Инициатор, я хочу получать уведомление о результате согласования, чтобы своевременно принять следующие шаги.
 
-## 2. Пользовательские требования (User Requirements)
-[UC по Коберну: таблица Шаг/Актор/Действие/Результат, предусловия, расширения, постусловия]
+**Критерии приёмки (Acceptance Criteria):**
+- [ ] AC-1: Уведомление приходит в течение 2 минут после принятия решения
+- [ ] AC-2: В уведомлении указан результат, комментарий и ссылка на заявку
+- [ ] AC-3: История уведомлений доступна в личном кабинете
+"""
 
-## 3. Функциональные требования (Functional Requirements)
-[Список FR-XX: что конкретно делает система — валидация, интеграции, авто-уведомления, хранение]
-
-## 4. Нефункциональные требования (Non-Functional Requirements)
-[NFR-XX: Производительность, Безопасность, Доступность, Масштабируемость — с конкретными метриками]
-
-===== ПРАВИЛА ДЛЯ RTM =====
-Строго Markdown-таблица, минимум 18 строк:
-
-# Матрица трассировки требований (RTM)
-
-| ID | Тип | Описание фичи | Приоритет |
-|----|-----|---------------|-----------|
-[Строки с типами: Бизнес, Пользователь, Функциональное, Нефункциональное; приоритеты: Must / Should / Could]
-
-ВАЖНО: Никаких пояснений вне четырёх разделов. Маркеры MERMAID_ASIS:, MERMAID_TOBE:, SPEC:, RTM: — строго на отдельных строках. Для Mermaid НЕ оборачивай код в ```mermaid ``` — только чистый синтаксис."""
-
-
-def _build_prompt(context_str: str, user_problem: str, insights: list) -> str:
-    today = datetime.now().strftime("%d.%m.%Y")
-    insight_str = " ".join(insights[:5]) if insights else ""
-    problem_part = f" Задача: {user_problem.strip()}." if user_problem.strip() else ""
-    return (
-        f"Сегодня: {today}. {context_str}{problem_part} Наблюдения: {insight_str}"
-    ).strip()
-
-
-def _parse_ai_response(text: str) -> dict:
-    def extract_block(start_marker, end_markers, text):
-        pattern = rf"^{re.escape(start_marker)}\s*\n([\s\S]+?)(?=\n(?:{'|'.join(re.escape(m) for m in end_markers)})|\Z)"
-        m = re.search(pattern, text, re.MULTILINE)
-        return m.group(1).strip() if m else ""
-
-    all_markers = ["MERMAID_ASIS:", "MERMAID_TOBE:", "SPEC:", "RTM:"]
-    mermaid_asis = extract_block("MERMAID_ASIS:", ["MERMAID_TOBE:", "SPEC:", "RTM:"], text)
-    mermaid_tobe = extract_block("MERMAID_TOBE:", ["SPEC:", "RTM:"], text)
-    spec_text    = extract_block("SPEC:",          ["RTM:"], text)
-    rtm_text     = extract_block("RTM:",           [], text)
-
-    return {
-        "mermaid_asis": fix_mermaid_syntax(mermaid_asis),
-        "mermaid_tobe": fix_mermaid_syntax(mermaid_tobe),
-        "spec":         spec_text or "",
-        "rtm":          rtm_text or "",
-    }
-
-
-def _call_ai(context_str: str, user_problem: str, insights: list) -> dict:
-    client, model = get_ai_client()
-    if client is None:
-        return None
-    prompt = _build_prompt(context_str, user_problem, insights)
-    resp = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user",   "content": prompt},
-        ],
-        temperature=0.35,
-        max_tokens=4000,
-    )
-    return _parse_ai_response(str(resp.choices[0].message.content))
+DEMO_STATS = {"task_count": 4, "actor_count": 2, "process_name": "Согласование заявок (демо)"}
 
 
 # ---------------------------------------------------------------------------
@@ -418,48 +364,42 @@ async def index():
 
 @app.post("/analyze")
 async def analyze(
-    problem: str = Form(default=""),
+    goals: str = Form(default=""),
     file: UploadFile = File(default=None),
 ):
-    df = None
+    bpmn_data    = None
+    parse_error  = None
+
     if file and file.filename:
-        fname = file.filename.lower()
-        if fname.endswith((".xlsx", ".xls")):
-            try:
-                file.file.seek(0)
-                df = pd.read_excel(file.file, engine="openpyxl")
-            except Exception as e:
-                return JSONResponse({"error": f"Ошибка чтения Excel: {e}"}, status_code=400)
-        elif fname.endswith(".csv"):
-            try:
-                file.file.seek(0)
-                df = pd.read_csv(file.file)
-            except Exception as e:
-                return JSONResponse({"error": f"Ошибка чтения CSV: {e}"}, status_code=400)
-        else:
+        fname = (file.filename or "").lower()
+        if not fname.endswith(".bpmn"):
             return JSONResponse(
-                {"error": "Поддерживаются только .csv, .xls, .xlsx."},
+                {"error": "Поддерживается только формат .bpmn. Загрузите BPMN 2.0-файл."},
                 status_code=400,
             )
-
-    if df is None and not problem.strip():
-        return JSONResponse(
-            {"error": "Загрузите файл или введите описание бизнес-процесса."},
-            status_code=400,
-        )
-
-    analysis   = {}
-    file_stats = None
-    if df is not None:
-        analysis = analyze_dataframe(df)
-        file_stats = {
-            "rows":     analysis["total_rows"],
-            "columns":  analysis["column_names"],
-            "insights": analysis["insights"],
+        try:
+            file.file.seek(0)
+            content = file.file.read()
+            bpmn_data = parse_bpmn(content)
+            if bpmn_data["task_count"] == 0:
+                parse_error = "В файле не найдено именованных шагов. Убедитесь, что задачи в BPMN имеют атрибут name."
+        except Exception as e:
+            return JSONResponse({"error": f"Ошибка чтения BPMN: {e}"}, status_code=400)
+    else:
+        if not goals.strip():
+            return JSONResponse(
+                {"error": "Загрузите .bpmn-файл или введите описание бизнес-процесса в поле целей."},
+                status_code=400,
+            )
+        # Text-only mode: construct a minimal context from the goals text
+        bpmn_data = {
+            "tasks":        [],
+            "actors":       [],
+            "process_name": "",
+            "task_count":   0,
+            "actor_count":  0,
+            "context_str":  f"Описание процесса от пользователя: {goals.strip()}",
         }
-
-    context_str = analysis.get("context_str", "")
-    insights    = analysis.get("insights", [])
 
     client, _  = get_ai_client()
     is_demo    = client is None
@@ -467,14 +407,14 @@ async def analyze(
 
     if is_demo:
         ai = None
-        demo_reason = "GROQ_API_KEY не задан — активирован демо-режим"
+        demo_reason = "GROQ_API_KEY не задан — показан демо-шаблон"
     else:
         try:
-            ai = _call_ai(context_str, problem, insights)
-            if not ai or not ai.get("mermaid_asis"):
+            ai = _call_ai(bpmn_data["context_str"], goals)
+            if not ai or not ai.get("spec"):
                 ai = None
                 is_demo = True
-                demo_reason = "AI вернул пустой ответ — показан шаблон"
+                demo_reason = "AI вернул пустой ответ — показан демо-шаблон"
         except Exception as e:
             ai = None
             is_demo = True
@@ -482,24 +422,33 @@ async def analyze(
 
     today = datetime.now().strftime("%d.%m.%Y")
     if ai:
-        mermaid_asis = ai["mermaid_asis"]
-        mermaid_tobe = ai["mermaid_tobe"]
-        spec         = ai["spec"]
-        rtm          = ai["rtm"]
+        spec    = ai["spec"]
+        rtm     = ai["rtm"]
+        backlog = ai["backlog"]
     else:
-        mermaid_asis = DEMO_MERMAID_ASIS
-        mermaid_tobe = DEMO_MERMAID_TOBE
-        spec         = DEMO_SPEC.format(date=today)
-        rtm          = DEMO_RTM
+        spec    = DEMO_SPEC.format(date=today)
+        rtm     = DEMO_RTM
+        backlog = DEMO_BACKLOG
+
+    stats = {
+        "task_count":   bpmn_data["task_count"],
+        "actor_count":  bpmn_data["actor_count"],
+        "process_name": bpmn_data["process_name"],
+        "tasks":        bpmn_data["tasks"][:10],
+        "actors":       bpmn_data["actors"][:6],
+        "parse_error":  parse_error,
+    } if bpmn_data["task_count"] > 0 else None
+
+    full_md = f"# BAlance.ai — Проектная документация\n\n**Дата:** {today}\n\n---\n\n{spec}\n\n---\n\n{rtm}\n\n---\n\n{backlog}"
 
     return JSONResponse({
-        "mermaid_asis": mermaid_asis,
-        "mermaid_tobe": mermaid_tobe,
         "spec":         spec,
         "rtm":          rtm,
+        "backlog":      backlog,
+        "full_md":      full_md,
         "demo":         is_demo,
         "demo_reason":  demo_reason,
-        "file_stats":   file_stats,
+        "stats":        stats,
     })
 
 
