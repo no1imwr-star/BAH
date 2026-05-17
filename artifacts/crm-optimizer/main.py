@@ -2,8 +2,9 @@ import os
 import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
+from io import BytesIO
 from fastapi import FastAPI, File, UploadFile, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import pandas as pd
 
 app = FastAPI(title="BAlance.ai — BPMN to Requirements Documentation Generator")
@@ -450,6 +451,303 @@ async def analyze(
         "demo_reason":  demo_reason,
         "stats":        stats,
     })
+
+
+# ---------------------------------------------------------------------------
+# MARKDOWN → DOCX CONVERTER
+# ---------------------------------------------------------------------------
+def _bold_run(para, text: str):
+    """Add a paragraph run with inline **bold** support."""
+    parts = re.split(r"\*\*(.+?)\*\*", text)
+    for i, part in enumerate(parts):
+        if not part:
+            continue
+        run = para.add_run(part)
+        if i % 2 == 1:          # odd indices are inside **...**
+            run.bold = True
+
+
+def md_to_docx(md_text: str) -> bytes:
+    try:
+        from docx import Document
+        from docx.shared import Pt, RGBColor, Inches
+        from docx.oxml.ns import qn
+    except ImportError:
+        raise RuntimeError("python-docx не установлен")
+
+    doc = Document()
+
+    # Global style tweaks
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(11)
+
+    lines = md_text.splitlines()
+    i = 0
+    table_rows: list = []
+
+    def flush_table():
+        nonlocal table_rows
+        if not table_rows:
+            return
+        n_cols = max(len(r) for r in table_rows)
+        t = doc.add_table(rows=len(table_rows), cols=n_cols)
+        t.style = "Table Grid"
+        for ri, row in enumerate(table_rows):
+            for ci, cell_text in enumerate(row[:n_cols]):
+                cell = t.cell(ri, ci)
+                cell.text = ""
+                p = cell.paragraphs[0]
+                run = p.add_run(cell_text)
+                if ri == 0:
+                    run.bold = True
+        table_rows = []
+
+    while i < len(lines):
+        raw = lines[i]
+        s   = raw.strip()
+
+        # ── Table rows ──────────────────────────────────────────
+        if s.startswith("|") and s.endswith("|"):
+            # Skip separator lines like |---|---|
+            if re.match(r"^[\|\s\-:]+$", s):
+                i += 1
+                continue
+            cells = [c.strip() for c in s[1:-1].split("|")]
+            table_rows.append(cells)
+            i += 1
+            continue
+
+        # Flush any pending table before processing non-table line
+        flush_table()
+
+        # ── Headings ─────────────────────────────────────────────
+        if s.startswith("### "):
+            doc.add_heading(s[4:], level=3)
+        elif s.startswith("## "):
+            doc.add_heading(s[3:], level=2)
+        elif s.startswith("# "):
+            doc.add_heading(s[2:], level=1)
+
+        # ── Horizontal rule ──────────────────────────────────────
+        elif s == "---":
+            doc.add_paragraph("─" * 55)
+
+        # ── Bullet list ──────────────────────────────────────────
+        elif re.match(r"^[-*] \[[ x]\] ", s):      # checkbox
+            text = re.sub(r"^[-*] \[[ x]\] ", "☐ ", s)
+            p = doc.add_paragraph(style="List Bullet")
+            _bold_run(p, text)
+        elif s.startswith("- ") or s.startswith("* "):
+            p = doc.add_paragraph(style="List Bullet")
+            _bold_run(p, s[2:])
+        elif re.match(r"^\d+\. ", s):
+            p = doc.add_paragraph(style="List Number")
+            _bold_run(p, re.sub(r"^\d+\. ", "", s))
+
+        # ── Bold-only line (e.g. **Роль:** xxx) ──────────────────
+        elif s.startswith("**") and s:
+            p = doc.add_paragraph()
+            _bold_run(p, s)
+
+        # ── Regular paragraph (skip blanks) ──────────────────────
+        elif s:
+            clean = re.sub(r"`([^`]+)`", r"\1", s)   # strip code ticks
+            p = doc.add_paragraph()
+            _bold_run(p, clean)
+
+        i += 1
+
+    flush_table()
+
+    buf = BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# MARKDOWN → PDF CONVERTER  (ReportLab — pure Python, full Cyrillic support)
+# ---------------------------------------------------------------------------
+def md_to_pdf(md_text: str) -> bytes:
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.lib import colors
+        from reportlab.platypus import (
+            SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
+            Table, TableStyle, ListFlowable, ListItem,
+        )
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+    except ImportError:
+        raise RuntimeError("reportlab не установлен")
+
+    # Register a Unicode font for Cyrillic if available
+    _FONT_NAME = "Helvetica"      # safe ASCII fallback
+    _FONT_BOLD = "Helvetica-Bold"
+    for candidate in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+    ]:
+        if os.path.exists(candidate):
+            try:
+                pdfmetrics.registerFont(TTFont("UniFont", candidate))
+                bold_path = candidate.replace(".ttf", "-Bold.ttf").replace("Regular", "Bold")
+                if os.path.exists(bold_path):
+                    pdfmetrics.registerFont(TTFont("UniFont-Bold", bold_path))
+                    _FONT_BOLD = "UniFont-Bold"
+                _FONT_NAME = "UniFont"
+            except Exception:
+                pass
+            break
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf,
+        pagesize=A4,
+        leftMargin=2*cm, rightMargin=2*cm,
+        topMargin=2*cm,  bottomMargin=2*cm,
+    )
+
+    accent = colors.HexColor("#FF385C")
+    dark   = colors.HexColor("#222222")
+    light  = colors.HexColor("#717171")
+
+    styles = getSampleStyleSheet()
+    sty = {
+        "h1": ParagraphStyle("h1", fontName=_FONT_BOLD, fontSize=16, textColor=dark,
+                              spaceAfter=8, spaceBefore=14, leading=20),
+        "h2": ParagraphStyle("h2", fontName=_FONT_BOLD, fontSize=12, textColor=accent,
+                              spaceAfter=5, spaceBefore=12, leading=16),
+        "h3": ParagraphStyle("h3", fontName=_FONT_BOLD, fontSize=10.5, textColor=dark,
+                              spaceAfter=4, spaceBefore=8, leading=14),
+        "body": ParagraphStyle("body", fontName=_FONT_NAME, fontSize=10, textColor=dark,
+                               spaceAfter=4, leading=14),
+        "bullet": ParagraphStyle("bullet", fontName=_FONT_NAME, fontSize=10, textColor=dark,
+                                 leftIndent=14, spaceAfter=2, leading=13),
+        "cell": ParagraphStyle("cell", fontName=_FONT_NAME, fontSize=8.5, textColor=dark,
+                               leading=11),
+        "cell_hd": ParagraphStyle("cell_hd", fontName=_FONT_BOLD, fontSize=8.5,
+                                  textColor=colors.white, leading=11),
+    }
+
+    def strip_inline(t: str) -> str:
+        t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
+        t = re.sub(r"\*(.+?)\*",   r"\1", t)
+        t = re.sub(r"`([^`]+)`",   r"\1", t)
+        return t.strip()
+
+    story = []
+    lines = md_text.splitlines()
+    i = 0
+    table_rows: list = []
+
+    def flush_table():
+        nonlocal table_rows
+        if not table_rows:
+            return
+        n_cols = max(len(r) for r in table_rows)
+        tdata = []
+        for ri, row in enumerate(table_rows):
+            row_cells = []
+            for ci in range(n_cols):
+                txt = row[ci] if ci < len(row) else ""
+                st  = sty["cell_hd"] if ri == 0 else sty["cell"]
+                row_cells.append(Paragraph(strip_inline(txt), st))
+            tdata.append(row_cells)
+        col_w = (A4[0] - 4*cm) / n_cols
+        t = Table(tdata, colWidths=[col_w]*n_cols, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), dark),
+            ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9f9f9")]),
+            ("GRID",       (0, 0), (-1, -1), 0.4, colors.HexColor("#e0e0e0")),
+            ("VALIGN",     (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING",   (0, 0), (-1, -1), 6),
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 6))
+        table_rows.clear()
+
+    while i < len(lines):
+        raw = lines[i]
+        s   = raw.strip()
+
+        if s.startswith("|") and s.endswith("|"):
+            if re.match(r"^[\|\s\-:]+$", s):
+                i += 1
+                continue
+            cells = [c.strip() for c in s[1:-1].split("|")]
+            table_rows.append(cells)
+            i += 1
+            continue
+
+        flush_table()
+
+        if s.startswith("### "):
+            story.append(Paragraph(strip_inline(s[4:]), sty["h3"]))
+        elif s.startswith("## "):
+            story.append(Paragraph(strip_inline(s[3:]), sty["h2"]))
+        elif s.startswith("# "):
+            story.append(Paragraph(strip_inline(s[2:]), sty["h1"]))
+        elif s == "---":
+            story.append(HRFlowable(width="100%", thickness=0.5,
+                                    color=colors.HexColor("#dddddd"), spaceAfter=6))
+        elif re.match(r"^[-*] \[[ x]\] ", s):
+            text = "☐ " + strip_inline(re.sub(r"^[-*] \[[ x]\] ", "", s))
+            story.append(Paragraph(text, sty["bullet"]))
+        elif s.startswith("- ") or s.startswith("* "):
+            story.append(Paragraph("• " + strip_inline(s[2:]), sty["bullet"]))
+        elif re.match(r"^\d+\. ", s):
+            story.append(Paragraph(strip_inline(re.sub(r"^\d+\.\s*", "", s)), sty["bullet"]))
+        elif s:
+            story.append(Paragraph(strip_inline(s), sty["body"]))
+        else:
+            story.append(Spacer(1, 4))
+
+        i += 1
+
+    flush_table()
+
+    doc.build(story)
+    buf.seek(0)
+    return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# DOWNLOAD ROUTES
+# ---------------------------------------------------------------------------
+@app.post("/download/docx")
+async def download_docx(content: str = Form(...)):
+    try:
+        data = md_to_docx(content)
+    except Exception as e:
+        return JSONResponse({"error": f"Ошибка генерации DOCX: {e}"}, status_code=500)
+    filename = f"balance_ai_spec_{datetime.now().strftime('%Y%m%d')}.docx"
+    return StreamingResponse(
+        BytesIO(data),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/download/pdf")
+async def download_pdf(content: str = Form(...)):
+    try:
+        data = md_to_pdf(content)
+    except Exception as e:
+        return JSONResponse({"error": f"Ошибка генерации PDF: {e}"}, status_code=500)
+    filename = f"balance_ai_spec_{datetime.now().strftime('%Y%m%d')}.pdf"
+    return StreamingResponse(
+        BytesIO(data),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -82,8 +82,15 @@
     #results { display: none; margin-top: 20px; }
     .results-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
     .results-title { font-size: 1rem; font-weight: 600; color: #222; }
-    .btn-dl { padding: 9px 18px; background: #222; color: #fff; border: none; border-radius: 10px; font-size: 0.82rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s; display: flex; align-items: center; gap: 7px; }
-    .btn-dl:hover { background: #444; }
+    .export-block { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .export-label { font-size: 0.78rem; color: #717171; font-weight: 500; white-space: nowrap; }
+    .btn-dl { padding: 9px 14px; background: #222; color: #fff; border: none; border-radius: 8px; font-size: 0.79rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, transform .1s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .btn-dl:hover { background: #444; transform: translateY(-1px); }
+    .btn-dl.outline { background: #fff; color: #222; border: 1.5px solid #ddd; }
+    .btn-dl.outline:hover { background: #f7f7f7; border-color: #aaa; }
+    .btn-dl.primary { background: #FF385C; }
+    .btn-dl.primary:hover { background: #e0314f; }
+    .export-err { font-size: 0.78rem; color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 7px 12px; display: none; margin-top: 6px; }
     .divider { height: 1px; background: #ebebeb; margin: 0 0 20px; }
 
     /* ── TABS ── */
@@ -191,10 +198,24 @@
 
     <div class="results-top">
       <div class="results-title">Сгенерированная документация</div>
-      <button class="btn-dl" onclick="downloadFull()">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Скачать спецификацию (.md)
-      </button>
+      <div>
+        <div class="export-block">
+          <span class="export-label">📥 Экспорт:</span>
+          <button class="btn-dl outline" onclick="downloadFull()">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Markdown (.md)
+          </button>
+          <button class="btn-dl" onclick="downloadAs('docx')" id="btn-docx">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Word (.docx)
+          </button>
+          <button class="btn-dl primary" onclick="downloadAs('pdf')" id="btn-pdf">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            PDF (.pdf)
+          </button>
+        </div>
+        <div class="export-err" id="export-err"></div>
+      </div>
     </div>
     <div class="divider"></div>
 
@@ -367,6 +388,45 @@ function downloadFull() {
   a.href = URL.createObjectURL(new Blob([_fullMd], { type: 'text/markdown' }));
   a.download = 'balance_ai_specification.md';
   a.click();
+}
+
+async function downloadAs(fmt) {
+  if (!_fullMd) return;
+  var errEl  = document.getElementById('export-err');
+  var btnId  = fmt === 'docx' ? 'btn-docx' : 'btn-pdf';
+  var btn    = document.getElementById(btnId);
+  var origTx = btn.innerText;
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerText = 'Генерируем…';
+
+  try {
+    var fd = new FormData();
+    fd.append('content', _fullMd);
+
+    var res = await fetch('/download/' + fmt, { method: 'POST', body: fd });
+
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return { error: 'Ошибка сервера' }; });
+      throw new Error(err.error || 'HTTP ' + res.status);
+    }
+
+    var blob = await res.blob();
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = 'balance_ai_specification.' + fmt;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    errEl.textContent = '⚠ Ошибка экспорта: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled  = false;
+    btn.innerText = origTx;
+  }
 }
 </script>
 </body>

@@ -6,8 +6,6 @@ pandas
 openpyxl
 xlrd
 openai
-fastapi
-jinja2
-python-multipart
-uvicorn
-streamlit
+python-docx
+reportlab
+markdown
