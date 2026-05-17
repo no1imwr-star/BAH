@@ -1,433 +1,682 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BAlance.ai — BPMN to Requirements Documentation</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f7f7f7; color: #222; min-height: 100vh; }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BAlance.ai — ИИ-Автопилот Бизнес-аналитика</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── HEADER ── */
-    .header { background: #fff; border-bottom: 1px solid #ebebeb; padding: 0 40px; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 200; }
-    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-    .logo-mark { width: 34px; height: 34px; background: #FF385C; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .logo-name { font-size: 1.05rem; font-weight: 700; color: #222; letter-spacing: -0.3px; }
-    .logo-name span { color: #FF385C; }
-    .logo-sub { font-size: 0.68rem; color: #717171; font-weight: 400; display: block; }
-    .header-badge { font-size: 0.78rem; color: #717171; background: #f7f7f7; border: 1px solid #ebebeb; border-radius: 20px; padding: 4px 12px; white-space: nowrap; }
+  :root {
+    --accent:  #FF385C;
+    --dark:    #222222;
+    --mid:     #717171;
+    --border:  #dddddd;
+    --bg:      #f7f7f7;
+    --white:   #ffffff;
+    --radius:  16px;
+    --shadow:  0 2px 16px rgba(0,0,0,.1);
+  }
 
-    /* ── HERO ── */
-    .hero { text-align: center; padding: 52px 24px 36px; max-width: 680px; margin: 0 auto; }
-    .hero-eyebrow { display: inline-block; font-size: 0.78rem; font-weight: 600; color: #FF385C; letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 14px; }
-    .hero h1 { font-size: 2.3rem; font-weight: 700; color: #222; line-height: 1.2; letter-spacing: -0.8px; margin-bottom: 12px; }
-    .hero p { font-size: 0.97rem; color: #717171; line-height: 1.65; max-width: 500px; margin: 0 auto; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    min-height: 100vh;
+  }
 
-    /* ── CONTAINER ── */
-    .container { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 900px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 800; font-size: 14px; letter-spacing: -.5px;
+  }
+  .logo-text { font-weight: 700; font-size: 1rem; color: var(--dark); }
+  .logo-sub  { font-size: 0.72rem; color: var(--mid); margin-top: 1px; }
+  .badge {
+    font-size: 0.72rem; font-weight: 600; padding: 4px 10px;
+    border-radius: 20px; background: #f5f5f5; color: var(--mid);
+    border: 1px solid var(--border);
+  }
 
-    /* ── CARD ── */
-    .card { background: #fff; border-radius: 16px; padding: 34px 38px; box-shadow: 0 6px 16px rgba(0,0,0,0.08); border: 1px solid #ebebeb; }
-    .card-title { font-size: 1rem; font-weight: 600; color: #222; margin-bottom: 22px; display: flex; align-items: center; gap: 8px; }
-    .card-title::before { content: ""; display: inline-block; width: 3px; height: 16px; background: #FF385C; border-radius: 2px; }
+  /* ── HERO ── */
+  .hero {
+    max-width: 680px; margin: 0 auto;
+    padding: 60px 24px 40px;
+    text-align: center;
+  }
+  .hero-chip {
+    display: inline-block; font-size: 0.72rem; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-size: clamp(1.9rem, 5vw, 2.8rem);
+    font-weight: 800; line-height: 1.18; color: var(--dark);
+    margin-bottom: 14px;
+  }
+  .hero p {
+    font-size: 1.05rem; color: var(--mid); line-height: 1.6;
+  }
 
-    /* ── FORM ── */
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
-    label.field-label { display: block; font-size: 0.82rem; font-weight: 600; color: #222; margin-bottom: 7px; }
-    .field-hint { font-size: 0.75rem; color: #717171; font-weight: 400; }
+  /* ── INPUT CARD ── */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+  }
+  .input-card {
+    max-width: 680px; margin: 0 auto 32px;
+    padding: 28px 28px 22px;
+  }
+  .input-label {
+    font-size: 0.82rem; font-weight: 600; color: var(--dark);
+    margin-bottom: 10px; display: block;
+  }
+  textarea {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; font-size: 0.97rem; font-family: inherit;
+    color: var(--dark); resize: vertical; min-height: 130px;
+    transition: border-color .15s; outline: none;
+    line-height: 1.55;
+  }
+  textarea:focus { border-color: var(--dark); }
+  .input-hint {
+    font-size: 0.75rem; color: var(--mid); margin-top: 8px; line-height: 1.5;
+  }
+  .input-hint strong { color: var(--dark); }
+  .btn-submit {
+    width: 100%; margin-top: 16px;
+    padding: 15px; border: none; border-radius: 12px;
+    background: var(--accent); color: #fff;
+    font-size: 0.97rem; font-weight: 700; font-family: inherit;
+    cursor: pointer; transition: background .15s, transform .1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-submit:hover:not(:disabled) { background: #e0314f; transform: translateY(-1px); }
+  .btn-submit:disabled { opacity: .65; cursor: not-allowed; transform: none; }
 
-    .upload-area { border: 2px dashed #ddd; border-radius: 12px; padding: 30px 20px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; background: #fafafa; min-height: 168px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-    .upload-area:hover, .upload-area.dragover { border-color: #FF385C; background: #fff5f6; }
-    .upload-area input { display: none; }
-    .upload-icon { width: 48px; height: 48px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; font-size: 1.4rem; }
-    .upload-main { font-size: 0.88rem; font-weight: 500; color: #222; margin-bottom: 4px; }
-    .upload-sub { font-size: 0.76rem; color: #717171; margin-bottom: 2px; }
-    .upload-ext { display: inline-block; font-size: 0.72rem; font-weight: 600; color: #FF385C; background: #fff0f2; border: 1px solid #ffc8d0; border-radius: 4px; padding: 2px 7px; margin-top: 6px; }
-    .upload-filename { font-size: 0.81rem; color: #FF385C; font-weight: 600; margin-top: 8px; word-break: break-all; }
+  /* ── LOADER ── */
+  #loader { display: none; max-width: 680px; margin: 0 auto 20px; text-align: center; }
+  .loader-inner {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    padding: 36px; display: flex; flex-direction: column;
+    align-items: center; gap: 16px;
+  }
+  .spinner {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 3px solid #f0f0f0; border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-txt { font-size: 0.9rem; color: var(--mid); }
+  .loader-steps { display: flex; flex-direction: column; gap: 6px; }
+  .lstep {
+    font-size: 0.78rem; color: #bbb;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .lstep.done { color: #22c55e; }
+  .lstep.active { color: var(--dark); font-weight: 600; }
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+    flex-shrink: 0;
+  }
 
-    textarea { width: 100%; min-height: 168px; border: 1.5px solid #ddd; border-radius: 12px; padding: 13px 15px; font-size: 0.89rem; font-family: inherit; resize: vertical; transition: border-color .2s, box-shadow .2s; color: #222; line-height: 1.5; background: #fff; }
-    textarea:focus { outline: none; border-color: #FF385C; box-shadow: 0 0 0 3px rgba(255,56,92,0.1); }
-    textarea::placeholder { color: #bbb; }
-    .field-tip { font-size: 0.74rem; color: #717171; margin-top: 6px; }
+  /* ── DEMO BADGE ── */
+  .demo-note {
+    max-width: 680px; margin: 0 auto 16px;
+    background: #fff8e1; border: 1px solid #ffe082;
+    border-radius: 10px; padding: 10px 16px;
+    font-size: 0.78rem; color: #92610a; line-height: 1.5;
+    display: none;
+  }
 
-    .btn-analyze { margin-top: 26px; width: 100%; padding: 15px; background: #FF385C; color: #fff; border: none; border-radius: 12px; font-size: 0.94rem; font-weight: 600; cursor: pointer; transition: background .15s, transform .1s, box-shadow .15s; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; box-shadow: 0 4px 12px rgba(255,56,92,.28); }
-    .btn-analyze:hover:not(:disabled) { background: #e0314f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(255,56,92,.35); }
-    .btn-analyze:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
-    .spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: none; flex-shrink: 0; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+  /* ── ERROR ── */
+  .error-box {
+    max-width: 680px; margin: 0 auto 16px;
+    background: #fff1f2; border: 1px solid #fecdd3;
+    border-radius: 10px; padding: 12px 16px;
+    font-size: 0.82rem; color: #be123c;
+    display: none;
+  }
 
-    /* ── INFO BOXES ── */
-    .ibox { border-radius: 12px; padding: 12px 16px; font-size: 0.83rem; margin-top: 14px; display: none; line-height: 1.55; }
-    .ibox.demo  { background: #fff8e1; border: 1px solid #ffe082; color: #795548; }
-    .ibox.error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+  /* ── RESULTS ── */
+  #results { display: none; max-width: 900px; margin: 0 auto 60px; padding: 0 24px; }
 
-    /* ── BPMN STATS CARD ── */
-    .stats-card { background: #fff; border-radius: 14px; border: 1.5px solid #ebebeb; padding: 20px 24px; margin-top: 0; display: none; }
-    .stats-card-title { font-size: 0.82rem; font-weight: 700; color: #717171; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; }
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-    @media (max-width: 500px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
-    .stat-item { background: #fafafa; border-radius: 10px; padding: 12px 14px; border: 1px solid #f0f0f0; }
-    .stat-num  { font-size: 1.5rem; font-weight: 700; color: #FF385C; line-height: 1; margin-bottom: 3px; }
-    .stat-lbl  { font-size: 0.74rem; color: #717171; font-weight: 500; }
-    .stats-tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag { display: inline-block; font-size: 0.75rem; background: #f7f7f7; border: 1px solid #e0e0e0; border-radius: 6px; padding: 3px 10px; color: #444; }
-    .tag-actor { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
-    .parse-warn { font-size: 0.78rem; color: #b45309; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 8px 12px; margin-top: 10px; }
+  .results-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+  }
+  .results-title {
+    font-size: 1.05rem; font-weight: 700; color: var(--dark);
+  }
+  .results-sub { font-size: 0.78rem; color: var(--mid); margin-top: 3px; }
 
-    /* ── RESULTS ── */
-    #results { display: none; margin-top: 20px; }
-    .results-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-    .results-title { font-size: 1rem; font-weight: 600; color: #222; }
-    .export-block { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .export-label { font-size: 0.78rem; color: #717171; font-weight: 500; white-space: nowrap; }
-    .btn-dl { padding: 9px 14px; background: #222; color: #fff; border: none; border-radius: 8px; font-size: 0.79rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .15s, transform .1s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-    .btn-dl:hover { background: #444; transform: translateY(-1px); }
-    .btn-dl.outline { background: #fff; color: #222; border: 1.5px solid #ddd; }
-    .btn-dl.outline:hover { background: #f7f7f7; border-color: #aaa; }
-    .btn-dl.primary { background: #FF385C; }
-    .btn-dl.primary:hover { background: #e0314f; }
-    .export-err { font-size: 0.78rem; color: #be123c; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 7px 12px; display: none; margin-top: 6px; }
-    .divider { height: 1px; background: #ebebeb; margin: 0 0 20px; }
+  /* export */
+  .export-block { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .export-label { font-size: 0.76rem; color: var(--mid); font-weight: 600; white-space: nowrap; }
+  .btn-ex {
+    padding: 8px 13px; border-radius: 8px; font-size: 0.76rem; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: 1.5px solid var(--border);
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    transition: background .13s, border-color .13s, transform .1s;
+  }
+  .btn-ex:hover:not(:disabled) { transform: translateY(-1px); }
+  .btn-ex:disabled { opacity: .6; cursor: not-allowed; }
+  .btn-md   { background: var(--white); color: var(--dark); }
+  .btn-md:hover:not(:disabled) { background: #f5f5f5; border-color: #bbb; }
+  .btn-docx { background: #2b579a; color: #fff; border-color: #2b579a; }
+  .btn-docx:hover:not(:disabled) { background: #244d8a; }
+  .btn-pdf  { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-pdf:hover:not(:disabled)  { background: #e0314f; }
+  .export-err {
+    font-size: 0.75rem; color: #be123c; background: #fff1f2;
+    border: 1px solid #fecdd3; border-radius: 8px; padding: 7px 12px;
+    display: none; margin-top: 6px; width: 100%;
+  }
 
-    /* ── TABS ── */
-    .tabs { display: flex; gap: 2px; border-bottom: 2px solid #ebebeb; margin-bottom: 22px; overflow-x: auto; }
-    .tab  { padding: 10px 20px; border: none; background: none; font-size: 0.87rem; font-weight: 500; color: #717171; cursor: pointer; border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; border-radius: 6px 6px 0 0; font-family: inherit; white-space: nowrap; }
-    .tab.active { color: #FF385C; border-color: #FF385C; }
-    .tab:hover:not(.active) { color: #222; background: #fafafa; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
+  /* ── TABS ── */
+  .tabs-wrap { margin-bottom: 2px; }
+  .tabs {
+    display: flex; gap: 0; border-bottom: 2px solid #ebebeb;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 12px 18px; border: none; background: none; cursor: pointer;
+    font-family: inherit; font-size: 0.83rem; font-weight: 600;
+    color: var(--mid); border-bottom: 2.5px solid transparent;
+    margin-bottom: -2px; white-space: nowrap;
+    transition: color .15s, border-color .15s;
+  }
+  .tab:hover  { color: var(--dark); }
+  .tab.active { color: var(--dark); border-bottom-color: var(--dark); }
 
-    /* ── DOC BODY ── */
-    .doc-body { background: #fff; border: 1.5px solid #ebebeb; border-radius: 12px; padding: 28px 32px; max-height: 720px; overflow-y: auto; line-height: 1.8; font-size: 0.9rem; color: #222; }
-    .doc-body h1 { font-size: 1.18rem; font-weight: 700; margin-bottom: 6px; border-bottom: 2px solid #ebebeb; padding-bottom: 8px; }
-    .doc-body h2 { font-size: 0.95rem; font-weight: 700; color: #FF385C; margin: 24px 0 9px; text-transform: uppercase; letter-spacing: 0.4px; }
-    .doc-body h3 { font-size: 0.9rem; font-weight: 600; color: #222; margin: 16px 0 6px; }
-    .doc-body p  { margin-bottom: 9px; color: #444; }
-    .doc-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 0.83rem; border-radius: 8px; overflow: hidden; }
-    .doc-body th { background: #222; color: #fff; padding: 10px 14px; text-align: left; font-weight: 500; font-size: 0.8rem; }
-    .doc-body td { padding: 9px 14px; border-bottom: 1px solid #ebebeb; color: #444; vertical-align: top; }
-    .doc-body tr:last-child td { border-bottom: none; }
-    .doc-body tr:nth-child(even) td { background: #fafafa; }
-    .doc-body ul { padding-left: 20px; margin-bottom: 10px; color: #444; }
-    .doc-body ol { padding-left: 20px; margin-bottom: 10px; color: #444; }
-    .doc-body li { margin-bottom: 4px; }
-    .doc-body strong, .doc-body b { color: #222; font-weight: 600; }
-    .doc-body hr { border: none; border-top: 1px solid #ebebeb; margin: 20px 0; }
-    .doc-body code { background: #f7f7f7; padding: 2px 6px; border-radius: 4px; font-size: 0.84em; color: #FF385C; }
-    .doc-body blockquote { border-left: 3px solid #FF385C; padding-left: 14px; margin: 12px 0; color: #666; }
-    /* MoSCoW priority badges in RTM table */
-    .doc-body td:last-child { font-weight: 600; }
+  /* ── SECTION CARDS ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .sec-card {
+    background: var(--white); border-radius: var(--radius);
+    border: 1px solid var(--border); box-shadow: 0 1px 8px rgba(0,0,0,.06);
+    padding: 28px 32px; margin-top: 18px;
+  }
 
-    /* ── FOOTER ── */
-    .footer { text-align: center; font-size: 0.76rem; color: #aaa; padding: 28px 0 12px; }
-    .footer span { color: #FF385C; }
-  </style>
+  /* ── MARKDOWN CONTENT STYLES ── */
+  .md-body h1 { font-size: 1.3rem; font-weight: 800; margin: 0 0 14px; color: var(--dark); }
+  .md-body h2 { font-size: 1.05rem; font-weight: 700; margin: 22px 0 8px; color: var(--dark);
+                padding-bottom: 6px; border-bottom: 1.5px solid #ebebeb; }
+  .md-body h3 { font-size: 0.93rem; font-weight: 700; margin: 16px 0 6px; color: #333; }
+  .md-body p  { font-size: 0.9rem; line-height: 1.65; margin-bottom: 8px; color: #333; }
+  .md-body ul, .md-body ol { padding-left: 20px; margin-bottom: 10px; }
+  .md-body li { font-size: 0.88rem; line-height: 1.6; margin-bottom: 4px; color: #333; }
+  .md-body strong { font-weight: 700; color: var(--dark); }
+  .md-body em     { font-style: italic; color: var(--mid); }
+  .md-body code   { font-size: 0.82rem; background: #f5f5f5; padding: 2px 5px; border-radius: 4px; }
+  .md-body hr     { border: none; border-top: 1.5px solid #ebebeb; margin: 16px 0; }
+
+  /* tables */
+  .md-body table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.82rem; margin: 10px 0 16px;
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .md-body th {
+    background: var(--dark); color: #fff;
+    padding: 9px 12px; text-align: left; font-weight: 600;
+  }
+  .md-body td { padding: 9px 12px; border-bottom: 1px solid #ebebeb; color: #333; }
+  .md-body tr:last-child td { border-bottom: none; }
+  .md-body tr:nth-child(even) td { background: #fafafa; }
+
+  /* checkbox items */
+  .md-body .story-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-bottom: 6px; font-size: 0.88rem; line-height: 1.55; color: #333;
+  }
+  .story-cb {
+    width: 16px; height: 16px; border-radius: 4px;
+    border: 1.5px solid var(--border); flex-shrink: 0;
+    margin-top: 2px; display: inline-flex; align-items: center; justify-content: center;
+  }
+
+  /* ── BACK BUTTON ── */
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin: 24px auto 0; max-width: 900px;
+    padding: 0 24px; text-decoration: none;
+    font-size: 0.82rem; font-weight: 600; color: var(--mid);
+    cursor: pointer; background: none; border: none; font-family: inherit;
+  }
+  .btn-back:hover { color: var(--dark); }
+
+  /* ── FOOTER CHIP ── */
+  .footer-chip {
+    text-align: center; padding: 20px;
+    font-size: 0.73rem; color: var(--mid);
+  }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 16px 24px; }
+    .input-card { padding: 20px 16px 16px; }
+    .sec-card { padding: 18px 16px; }
+    .results-header { flex-direction: column; }
+    #results { padding: 0 12px; }
+  }
+</style>
 </head>
 <body>
 
-<header class="header">
-  <a class="logo" href="/">
-    <div class="logo-mark">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <path d="M3 9h12M9 3v12" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
-        <circle cx="9" cy="9" r="3" fill="none" stroke="#fff" stroke-width="1.5"/>
-      </svg>
-    </div>
-    <div>
-      <div class="logo-name">B<span>A</span>lance.ai</div>
-      <span class="logo-sub">BPMN → Requirements Documentation Generator</span>
-    </div>
-  </a>
-  <div class="header-badge">Groq · llama-3.1-8b</div>
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a class="logo" href="/">
+      <div class="logo-icon">BA</div>
+      <div>
+        <div class="logo-text">BAlance.ai</div>
+        <div class="logo-sub">ИИ-Автопилот Бизнес-аналитика</div>
+      </div>
+    </a>
+    <span class="badge">Groq · llama-3.1-8b</span>
+  </div>
 </header>
 
+<!-- HERO -->
 <div class="hero">
-  <span class="hero-eyebrow">Senior BA Methodology</span>
-  <h1>Из BPMN-схемы —<br/>в готовую спецификацию</h1>
-  <p>Загрузите файл <code>.bpmn</code> — получите полную спецификацию требований, матрицу RTM и бэклог Jira с User Stories.</p>
+  <div class="hero-chip">AI-first · Senior BA Methodology</div>
+  <h1>Из идеи —<br>в готовую документацию</h1>
+  <p>Опишите бизнес-задачу в одном предложении.<br>
+     ИИ сгенерирует полный комплект проектных артефактов.</p>
 </div>
 
-<div class="container">
+<!-- INPUT CARD -->
+<div class="input-card card" id="input-section">
+  <label class="input-label" for="task-input">Введите краткую бизнес-задачу или идею проекта</label>
+  <textarea id="task-input" placeholder="Например: Автоматизировать складской учёт. Или: Запустить мобильное приложение для доставки еды.&#10;&#10;Чем конкретнее — тем детальнее будет документация."></textarea>
+  <div class="input-hint">
+    <strong>Примеры:</strong> «Создать CRM для отдела продаж» · «Перевести документооборот в электронный вид» · «Разработать личный кабинет для клиентов банка»
+  </div>
+  <button class="btn-submit" id="btn-generate" onclick="generateDocs()">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    Сгенерировать полный комплект проектной документации
+  </button>
+</div>
 
-  <div class="card">
-    <div class="card-title">Входные данные</div>
-    <div class="form-grid">
+<!-- ERROR -->
+<div class="error-box" id="error-box"></div>
 
-      <div>
-        <label class="field-label">BPMN-схема <span class="field-hint">(обязательно)</span></label>
-        <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
-          <input type="file" id="file-input" accept=".bpmn" onchange="onFileSelected(this)"/>
-          <div class="upload-icon">📐</div>
-          <div class="upload-main">Нажмите или перетащите файл</div>
-          <div class="upload-sub">Загрузите вашу схему для автоматической<br/>генерации спецификации требований и бэклога</div>
-          <span class="upload-ext">.bpmn</span>
-          <div class="upload-filename" id="file-name"></div>
-        </div>
-      </div>
-
-      <div>
-        <label class="field-label">Бизнес-цели проекта <span class="field-hint">(необязательно)</span></label>
-        <textarea id="goals" placeholder="Опишите дополнительный контекст или бизнес-цели, например:&#10;&#10;«Автоматизировать процесс согласования договоров. Целевое время обработки — не более 4 часов. Интеграция с 1С и корпоративным порталом.»&#10;&#10;Без файла — опишите процесс текстом, и AI создаст документацию на его основе."></textarea>
-        <div class="field-tip">💡 AI извлечёт шаги и роли из BPMN автоматически. Поле позволяет добавить стратегический контекст.</div>
-      </div>
-
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-inner">
+    <div class="spinner"></div>
+    <div class="loader-txt">Анализирую задачу и генерирую артефакты…</div>
+    <div class="loader-steps">
+      <div class="lstep active" id="ls1"><span class="dot"></span>Понимаю бизнес-контекст</div>
+      <div class="lstep" id="ls2"><span class="dot"></span>Формирую Vision &amp; Scope</div>
+      <div class="lstep" id="ls3"><span class="dot"></span>Составляю спецификацию требований</div>
+      <div class="lstep" id="ls4"><span class="dot"></span>Пишу Use Cases и User Stories</div>
+      <div class="lstep" id="ls5"><span class="dot"></span>Строю RTM-матрицу</div>
     </div>
-    <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
-      <div class="spinner" id="spinner"></div>
-      <span id="btn-label">Сгенерировать документацию</span>
-    </button>
+  </div>
+</div>
+
+<!-- DEMO NOTE -->
+<div class="demo-note" id="demo-note">
+  ⚠ <strong>Демо-режим:</strong> GROQ_API_KEY не найден — показана примерная документация. Добавьте ключ для генерации под вашу задачу.
+</div>
+
+<!-- RESULTS -->
+<div id="results">
+  <div class="results-header">
+    <div>
+      <div class="results-title" id="results-title">Проектная документация</div>
+      <div class="results-sub" id="results-sub"></div>
+    </div>
+    <div>
+      <div class="export-block">
+        <span class="export-label">📥 Экспорт:</span>
+        <button class="btn-ex btn-md"   onclick="downloadMd()">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Markdown
+        </button>
+        <button class="btn-ex btn-docx" onclick="downloadAs('docx')" id="btn-docx">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Word (.docx)
+        </button>
+        <button class="btn-ex btn-pdf"  onclick="downloadAs('pdf')"  id="btn-pdf">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          PDF
+        </button>
+      </div>
+      <div class="export-err" id="export-err"></div>
+    </div>
   </div>
 
-  <div class="ibox error" id="error-box"></div>
-
-  <div id="results">
-    <div class="ibox demo" id="demo-badge"></div>
-
-    <div class="stats-card" id="stats-card">
-      <div class="stats-card-title">📊 Статистика BPMN-файла</div>
-      <div class="stats-grid" id="stats-grid"></div>
-      <div class="stats-tags" id="stats-tags"></div>
-      <div class="parse-warn" id="parse-warn" style="display:none"></div>
-    </div>
-
-    <div style="height: 20px;"></div>
-
-    <div class="results-top">
-      <div class="results-title">Сгенерированная документация</div>
-      <div>
-        <div class="export-block">
-          <span class="export-label">📥 Экспорт:</span>
-          <button class="btn-dl outline" onclick="downloadFull()">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Markdown (.md)
-          </button>
-          <button class="btn-dl" onclick="downloadAs('docx')" id="btn-docx">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Word (.docx)
-          </button>
-          <button class="btn-dl primary" onclick="downloadAs('pdf')" id="btn-pdf">
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            PDF (.pdf)
-          </button>
-        </div>
-        <div class="export-err" id="export-err"></div>
-      </div>
-    </div>
-    <div class="divider"></div>
-
+  <!-- TABS -->
+  <div class="tabs-wrap">
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('spec',    this)">📋 Спецификация требований</button>
-      <button class="tab"        onclick="switchTab('rtm',     this)">🗂 Матрица RTM (MoSCoW)</button>
-      <button class="tab"        onclick="switchTab('backlog', this)">🎯 Бэклог Jira</button>
-    </div>
-
-    <div class="tab-panel active" id="tab-spec">
-      <div class="doc-body" id="spec-body"></div>
-    </div>
-
-    <div class="tab-panel" id="tab-rtm">
-      <div class="doc-body" id="rtm-body"></div>
-    </div>
-
-    <div class="tab-panel" id="tab-backlog">
-      <div class="doc-body" id="backlog-body"></div>
+      <button class="tab active" onclick="switchTab('vision',    this)">🎯 Vision &amp; Scope</button>
+      <button class="tab"        onclick="switchTab('srs',       this)">📋 Спецификация (SRS)</button>
+      <button class="tab"        onclick="switchTab('usecases',  this)">👤 Use Cases &amp; Stories</button>
+      <button class="tab"        onclick="switchTab('rtm',       this)">🗂 RTM / MoSCoW</button>
     </div>
   </div>
 
-  <div class="footer">Powered by <span>BAlance.ai</span> · Groq llama-3.1-8b-instant · BPMN → Requirements Intelligence</div>
+  <div class="tab-panel active" id="panel-vision">
+    <div class="sec-card"><div class="md-body" id="content-vision"></div></div>
+  </div>
+  <div class="tab-panel" id="panel-srs">
+    <div class="sec-card"><div class="md-body" id="content-srs"></div></div>
+  </div>
+  <div class="tab-panel" id="panel-usecases">
+    <div class="sec-card"><div class="md-body" id="content-usecases"></div></div>
+  </div>
+  <div class="tab-panel" id="panel-rtm">
+    <div class="sec-card"><div class="md-body" id="content-rtm"></div></div>
+  </div>
 </div>
 
-<!-- marked.js -->
-<script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+<div class="footer-chip">BAlance.ai · AI Business Analyst Autopilot · Groq llama-3.1-8b-instant</div>
 
 <script>
-var _fullMd = '';
+/* ────────────────────────────────────────────────────────────── */
+/* STATE                                                          */
+/* ────────────────────────────────────────────────────────────── */
+var _fullMd   = "";
+var _loaderTm = null;
 
-/* ── drag & drop ── */
-var dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover',  function(e){ e.preventDefault(); dz.classList.add('dragover'); });
-dz.addEventListener('dragleave', function(){ dz.classList.remove('dragover'); });
-dz.addEventListener('drop', function(e){
-  e.preventDefault(); dz.classList.remove('dragover');
-  var f = e.dataTransfer.files[0];
-  if (f) {
-    var dt = new DataTransfer();
-    dt.items.add(f);
-    document.getElementById('file-input').files = dt.files;
-    onFileSelected(document.getElementById('file-input'));
+/* ────────────────────────────────────────────────────────────── */
+/* MARKDOWN → HTML  (minimal, inline)                            */
+/* ────────────────────────────────────────────────────────────── */
+function mdToHtml(md) {
+  if (!md) return "";
+  var lines = md.split("\n");
+  var out   = [];
+  var i     = 0;
+  var inUl  = false, inOl = false, inTable = false;
+
+  function closeList() {
+    if (inUl) { out.push("</ul>"); inUl = false; }
+    if (inOl) { out.push("</ol>"); inOl = false; }
   }
-});
-function onFileSelected(inp) {
-  var n = inp.files[0] ? inp.files[0].name : '';
-  document.getElementById('file-name').textContent = n ? '✓ ' + n : '';
-}
-
-/* ── tabs ── */
-function switchTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-  document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
-  btn.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-}
-
-/* ── render stats ── */
-function renderStats(stats) {
-  var card = document.getElementById('stats-card');
-  if (!stats) { card.style.display = 'none'; return; }
-
-  var grid = document.getElementById('stats-grid');
-  grid.innerHTML =
-    statItem(stats.task_count,  'Шагов / задач') +
-    statItem(stats.actor_count, 'Участников / ролей') +
-    (stats.process_name
-      ? '<div class="stat-item" style="grid-column:span 1"><div class="stat-lbl" style="margin-bottom:4px">Процесс</div><div style="font-size:.82rem;font-weight:600;color:#222;word-break:break-word">' + esc(stats.process_name) + '</div></div>'
-      : '');
-
-  var tags = document.getElementById('stats-tags');
-  var html = '';
-  (stats.actors || []).forEach(function(a){ html += '<span class="tag tag-actor">' + esc(a) + '</span>'; });
-  (stats.tasks  || []).forEach(function(t){ html += '<span class="tag">' + esc(t) + '</span>'; });
-  tags.innerHTML = html;
-
-  var warn = document.getElementById('parse-warn');
-  if (stats.parse_error) {
-    warn.textContent = '⚠ ' + stats.parse_error;
-    warn.style.display = 'block';
-  } else {
-    warn.style.display = 'none';
+  function closeTable() {
+    if (inTable) { out.push("</tbody></table>"); inTable = false; }
+  }
+  function inline(t) {
+    t = t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    t = t.replace(/\*(.+?)\*/g,     "<em>$1</em>");
+    t = t.replace(/`([^`]+)`/g,     "<code>$1</code>");
+    return t;
   }
 
-  card.style.display = 'block';
+  while (i < lines.length) {
+    var raw = lines[i];
+    var s   = raw.trim();
+
+    // Skip section markers
+    if (/^\[SECTION_/.test(s)) { i++; continue; }
+
+    // Horizontal rule
+    if (/^---+$/.test(s)) {
+      closeList(); closeTable();
+      out.push("<hr>");
+      i++; continue;
+    }
+
+    // Table row
+    if (s.startsWith("|") && s.endsWith("|")) {
+      closeList();
+      if (/^[\|\s\-:]+$/.test(s)) { i++; continue; }  // separator
+      var cells = s.slice(1,-1).split("|").map(function(c){ return c.trim(); });
+      if (!inTable) {
+        out.push('<table><thead><tr>');
+        cells.forEach(function(c){ out.push("<th>" + inline(c) + "</th>"); });
+        out.push("</tr></thead><tbody>");
+        inTable = true;
+        i++; continue;
+      }
+      out.push("<tr>");
+      cells.forEach(function(c){ out.push("<td>" + inline(c) + "</td>"); });
+      out.push("</tr>");
+      i++; continue;
+    }
+
+    closeTable();
+
+    // Headings
+    if (/^### /.test(s)) { closeList(); out.push("<h3>" + inline(s.slice(4)) + "</h3>"); i++; continue; }
+    if (/^## /.test(s))  { closeList(); out.push("<h2>" + inline(s.slice(3)) + "</h2>"); i++; continue; }
+    if (/^# /.test(s))   { closeList(); out.push("<h1>" + inline(s.slice(2)) + "</h1>"); i++; continue; }
+
+    // Checkboxes / user stories
+    if (/^[-*] \[[ x]\] /.test(s)) {
+      if (!inUl) { out.push("<ul style='list-style:none;padding-left:0'>"); inUl = true; }
+      var txt = s.replace(/^[-*] \[[ x]\] /, "");
+      out.push('<li class="story-item"><span class="story-cb"></span><span>' + inline(txt) + "</span></li>");
+      i++; continue;
+    }
+
+    // Bullet list
+    if (/^[-*] /.test(s)) {
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
+      out.push("<li>" + inline(s.slice(2)) + "</li>");
+      i++; continue;
+    }
+
+    // Numbered list
+    if (/^\d+\. /.test(s)) {
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push("<li>" + inline(s.replace(/^\d+\. /, "")) + "</li>");
+      i++; continue;
+    }
+
+    // Italic-only lines (like _description_)
+    if (s.startsWith("_") && s.endsWith("_")) {
+      closeList();
+      out.push("<p><em>" + inline(s.slice(1,-1)) + "</em></p>");
+      i++; continue;
+    }
+
+    // Blank line
+    if (!s) {
+      closeList(); closeTable();
+      i++; continue;
+    }
+
+    // Paragraph
+    closeList();
+    out.push("<p>" + inline(s) + "</p>");
+    i++;
+  }
+
+  closeList();
+  closeTable();
+  return out.join("\n");
 }
 
-function statItem(n, lbl) {
-  return '<div class="stat-item"><div class="stat-num">' + n + '</div><div class="stat-lbl">' + lbl + '</div></div>';
+/* ────────────────────────────────────────────────────────────── */
+/* LOADER ANIMATION                                              */
+/* ────────────────────────────────────────────────────────────── */
+var _loaderStep = 0;
+var _loaderSteps = ["ls1","ls2","ls3","ls4","ls5"];
+function startLoader() {
+  _loaderStep = 0;
+  _loaderSteps.forEach(function(id){
+    var el = document.getElementById(id);
+    el.classList.remove("active","done");
+  });
+  document.getElementById("ls1").classList.add("active");
+  _loaderTm = setInterval(function() {
+    if (_loaderStep < _loaderSteps.length - 1) {
+      document.getElementById(_loaderSteps[_loaderStep]).classList.replace("active","done");
+      _loaderStep++;
+      document.getElementById(_loaderSteps[_loaderStep]).classList.add("active");
+    }
+  }, 1400);
 }
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function stopLoader() {
+  if (_loaderTm) { clearInterval(_loaderTm); _loaderTm = null; }
 }
 
-/* ── marked config ── */
-marked.setOptions({ breaks: true, gfm: true });
+/* ────────────────────────────────────────────────────────────── */
+/* GENERATE                                                       */
+/* ────────────────────────────────────────────────────────────── */
+async function generateDocs() {
+  var task = document.getElementById("task-input").value.trim();
+  if (!task) {
+    showError("Пожалуйста, введите описание бизнес-задачи.");
+    return;
+  }
 
-/* ── analyze ── */
-async function analyze() {
-  var btn    = document.getElementById('analyze-btn');
-  var label  = document.getElementById('btn-label');
-  var errBox = document.getElementById('error-box');
-
-  btn.disabled = true;
-  document.getElementById('spinner').style.display = 'block';
-  label.textContent = 'Анализируем BPMN и генерируем документацию…';
-  errBox.style.display = 'none';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('stats-card').style.display = 'none';
-
-  var fd = new FormData();
-  fd.append('goals', document.getElementById('goals').value);
-  var fi = document.getElementById('file-input');
-  if (fi.files[0]) fd.append('file', fi.files[0]);
+  hideError();
+  document.getElementById("demo-note").style.display = "none";
+  document.getElementById("results").style.display   = "none";
+  document.getElementById("loader").style.display    = "block";
+  document.getElementById("btn-generate").disabled   = true;
+  document.getElementById("btn-generate").textContent = "Генерируем…";
+  startLoader();
 
   try {
-    var res  = await fetch('/analyze', { method: 'POST', body: fd });
+    var fd = new FormData();
+    fd.append("task", task);
+    var res  = await fetch("/analyze", { method: "POST", body: fd });
     var data = await res.json();
 
-    if (!res.ok || data.error) {
-      errBox.textContent = '⚠ ' + (data.error || 'Неизвестная ошибка сервера');
-      errBox.style.display = 'block';
-      return;
-    }
+    stopLoader();
+    document.getElementById("loader").style.display  = "none";
+    document.getElementById("btn-generate").disabled = false;
+    document.getElementById("btn-generate").innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Сгенерировать полный комплект проектной документации';
 
-    _fullMd = data.full_md || '';
+    if (data.error) { showError("Ошибка: " + data.error); return; }
 
-    /* demo badge */
-    var badge = document.getElementById('demo-badge');
+    _fullMd = data.full_md || "";
+    var secs = data.sections || {};
+
+    renderSection("content-vision",    secs["VISION"]   || "");
+    renderSection("content-srs",       secs["SRS"]      || "");
+    renderSection("content-usecases",  secs["USECASES"] || "");
+    renderSection("content-rtm",       secs["RTM"]      || "");
+
+    document.getElementById("results-title").textContent = "Проектная документация";
+    document.getElementById("results-sub").textContent   =
+      "Задача: " + task.slice(0, 80) + (task.length > 80 ? "…" : "");
+
     if (data.demo) {
-      badge.textContent = 'ℹ Демо-режим: ' + (data.demo_reason || '') + '. Показан типовой шаблон.';
-      badge.style.display = 'block';
-    } else {
-      badge.style.display = 'none';
+      document.getElementById("demo-note").style.display = "block";
     }
 
-    renderStats(data.stats || null);
-
-    /* render docs */
-    document.getElementById('spec-body').innerHTML    = marked.parse(data.spec    || '');
-    document.getElementById('rtm-body').innerHTML     = marked.parse(data.rtm     || '');
-    document.getElementById('backlog-body').innerHTML = marked.parse(data.backlog || '');
-
-    document.getElementById('results').style.display = 'block';
-
-    /* reset to first tab */
-    document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
-    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
-    document.querySelector('.tab').classList.add('active');
-    document.getElementById('tab-spec').classList.add('active');
-
-    /* scroll to results */
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById("results").style.display = "block";
+    // Activate first tab
+    switchTab("vision", document.querySelector(".tab.active") || document.querySelectorAll(".tab")[0]);
+    document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
 
   } catch(e) {
-    errBox.textContent = '⚠ Ошибка сети: ' + e.message;
-    errBox.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    document.getElementById('spinner').style.display = 'none';
-    label.textContent = 'Сгенерировать документацию';
+    stopLoader();
+    document.getElementById("loader").style.display  = "none";
+    document.getElementById("btn-generate").disabled = false;
+    document.getElementById("btn-generate").innerHTML =
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Сгенерировать полный комплект проектной документации';
+    showError("Ошибка соединения: " + e.message);
   }
 }
 
-/* ── download ── */
-function downloadFull() {
+function renderSection(id, md) {
+  document.getElementById(id).innerHTML = mdToHtml(md);
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* TABS                                                           */
+/* ────────────────────────────────────────────────────────────── */
+function switchTab(name, btn) {
+  document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+  document.querySelectorAll(".tab").forEach(function(b){ b.classList.remove("active"); });
+  document.getElementById("panel-" + name).classList.add("active");
+  if (btn) btn.classList.add("active");
+}
+
+/* ────────────────────────────────────────────────────────────── */
+/* DOWNLOAD                                                       */
+/* ────────────────────────────────────────────────────────────── */
+function downloadMd() {
   if (!_fullMd) return;
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([_fullMd], { type: 'text/markdown' }));
-  a.download = 'balance_ai_specification.md';
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([_fullMd], { type: "text/markdown" }));
+  a.download = "balance_ai_docs.md";
   a.click();
 }
 
 async function downloadAs(fmt) {
   if (!_fullMd) return;
-  var errEl  = document.getElementById('export-err');
-  var btnId  = fmt === 'docx' ? 'btn-docx' : 'btn-pdf';
-  var btn    = document.getElementById(btnId);
-  var origTx = btn.innerText;
-  errEl.style.display = 'none';
+  var errEl   = document.getElementById("export-err");
+  var btnId   = fmt === "docx" ? "btn-docx" : "btn-pdf";
+  var btn     = document.getElementById(btnId);
+  var origHtml = btn.innerHTML;
+  errEl.style.display = "none";
   btn.disabled = true;
-  btn.innerText = 'Генерируем…';
+  btn.textContent = "Генерируем…";
 
   try {
     var fd = new FormData();
-    fd.append('content', _fullMd);
-
-    var res = await fetch('/download/' + fmt, { method: 'POST', body: fd });
+    fd.append("content", _fullMd);
+    var res = await fetch("/download/" + fmt, { method: "POST", body: fd });
 
     if (!res.ok) {
-      var err = await res.json().catch(function(){ return { error: 'Ошибка сервера' }; });
-      throw new Error(err.error || 'HTTP ' + res.status);
+      var err = await res.json().catch(function(){ return { error: "Ошибка сервера" }; });
+      throw new Error(err.error || "HTTP " + res.status);
     }
 
     var blob = await res.blob();
     var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
+    var a    = document.createElement("a");
     a.href   = url;
-    a.download = 'balance_ai_specification.' + fmt;
+    a.download = "balance_ai_docs." + fmt;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   } catch(e) {
-    errEl.textContent = '⚠ Ошибка экспорта: ' + e.message;
-    errEl.style.display = 'block';
+    errEl.textContent = "⚠ Ошибка: " + e.message;
+    errEl.style.display = "block";
   } finally {
     btn.disabled  = false;
-    btn.innerText = origTx;
+    btn.innerHTML = origHtml;
   }
 }
+
+/* ────────────────────────────────────────────────────────────── */
+/* UTILS                                                          */
+/* ────────────────────────────────────────────────────────────── */
+function showError(msg) {
+  var el = document.getElementById("error-box");
+  el.textContent = msg;
+  el.style.display = "block";
+}
+function hideError() {
+  document.getElementById("error-box").style.display = "none";
+}
+
+// Allow Ctrl+Enter to submit
+document.addEventListener("DOMContentLoaded", function() {
+  document.getElementById("task-input").addEventListener("keydown", function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generateDocs();
+  });
+});
 </script>
 </body>
 </html>

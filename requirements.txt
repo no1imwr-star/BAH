@@ -5,7 +5,7 @@ python-multipart
 pandas
 openpyxl
 xlrd
-openai
+groq
 python-docx
 reportlab
 markdown

@@ -1,483 +1,332 @@
 import os
 import re
-import xml.etree.ElementTree as ET
 from datetime import datetime
 from io import BytesIO
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-import pandas as pd
+from fastapi.templating import Jinja2Templates
+from groq import Groq
 
-app = FastAPI(title="BAlance.ai — BPMN to Requirements Documentation Generator")
-_HTML_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates", "index.html")
+app = FastAPI(title="BAlance.ai — AI Business Analyst Autopilot")
 
-# ---------------------------------------------------------------------------
-# AI client
-# ---------------------------------------------------------------------------
-try:
-    from openai import OpenAI as _OpenAI
-    _OPENAI_LIB = True
-except Exception:
-    _OPENAI_LIB = False
-
-
-def get_ai_client():
-    if not _OPENAI_LIB:
-        return None, None
-    try:
-        groq_key = os.environ.get("GROQ_API_KEY")
-        if groq_key:
-            return _OpenAI(base_url="https://api.groq.com/openai/v1", api_key=groq_key), "llama-3.1-8b-instant"
-    except Exception:
-        pass
-    try:
-        openai_key = os.environ.get("OPENAI_API_KEY")
-        if openai_key:
-            return _OpenAI(api_key=openai_key), "gpt-4o"
-    except Exception:
-        pass
-    return None, None
-
+_TMPL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+templates  = Jinja2Templates(directory=_TMPL_DIR)
+_HTML_FILE = os.path.join(_TMPL_DIR, "index.html")
 
 # ---------------------------------------------------------------------------
-# BPMN XML PARSER
+# GROQ CLIENT
 # ---------------------------------------------------------------------------
-# Task element local-names we care about
-_TASK_TAGS = {
-    "task", "usertask", "servicetask", "scripttask", "manualtask",
-    "businessruletask", "sendtask", "receivetask", "calledactivity",
-    "subprocess",
-}
-_ACTOR_TAGS = {"participant", "lane"}
-_PROCESS_TAGS = {"process", "collaboration"}
+_groq_client: Groq | None = None
 
-
-def _local(tag: str) -> str:
-    """Return the local name of an ElementTree tag (strips namespace URI)."""
-    return tag.split("}")[-1].lower() if "}" in tag else tag.lower()
-
-
-def _attr_name(el) -> str:
-    return (el.get("name") or "").strip()
-
-
-def parse_bpmn(content: bytes) -> dict:
-    """
-    Parse BPMN 2.0 XML and extract:
-      - tasks: list of task/step names
-      - actors: list of participant/lane names
-      - process_name: top-level process name
-      - raw_steps_text: comma-joined task names for prompting
-    Falls back to regex extraction if XML parse fails.
-    """
-    tasks, actors, process_name = [], [], ""
-
-    try:
-        root = ET.fromstring(content)
-
-        # Collect all elements by local tag
-        for el in root.iter():
-            local = _local(el.tag)
-            name  = _attr_name(el)
-
-            if local in _TASK_TAGS and name:
-                tasks.append(name)
-            elif local in _ACTOR_TAGS and name:
-                actors.append(name)
-            elif local == "process" and name and not process_name:
-                process_name = name
-            elif local == "collaboration" and name and not process_name:
-                process_name = name
-
-        # Deduplicate while preserving order
-        tasks  = list(dict.fromkeys(tasks))
-        actors = list(dict.fromkeys(actors))
-
-    except ET.ParseError:
-        # Fallback: regex extraction for malformed XML
-        text = content.decode("utf-8", errors="replace")
-        tasks  = re.findall(r'<(?:bpmn:)?(?:userTask|serviceTask|task|manualTask)[^>]+name="([^"]+)"', text)
-        actors = re.findall(r'<(?:bpmn:)?(?:participant|lane)[^>]+name="([^"]+)"', text)
-        m = re.search(r'<(?:bpmn:)?process[^>]+name="([^"]+)"', text)
-        process_name = m.group(1) if m else ""
-
-    return {
-        "tasks":           tasks,
-        "actors":          actors,
-        "process_name":    process_name,
-        "task_count":      len(tasks),
-        "actor_count":     len(actors),
-        "context_str":     _build_bpmn_context(tasks, actors, process_name),
-    }
-
-
-def _build_bpmn_context(tasks: list, actors: list, process_name: str) -> str:
-    parts = []
-    if process_name:
-        parts.append(f"Название процесса: «{process_name}».")
-    if actors:
-        parts.append(f"Участники/роли: {', '.join(actors[:10])}.")
-    if tasks:
-        numbered = "; ".join(f"{i+1}. {t}" for i, t in enumerate(tasks[:25]))
-        parts.append(f"Шаги процесса ({len(tasks)} шт.): {numbered}.")
-    if not parts:
-        parts.append("BPMN-файл не содержит именованных шагов.")
-    return " ".join(parts)
+def _get_groq() -> Groq:
+    global _groq_client
+    if _groq_client is None:
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("GROQ_API_KEY не найден в переменных окружения")
+        _groq_client = Groq(api_key=api_key)
+    return _groq_client
 
 
 # ---------------------------------------------------------------------------
 # SYSTEM PROMPT
 # ---------------------------------------------------------------------------
-_SYSTEM = """Ты — Senior Business Analyst и System Analyst с опытом в BPMN, разработке требований и управлении бэклогом. Тебе предоставлена структура бизнес-процесса, извлечённая из BPMN-файла.
+_SYSTEM_PROMPT = """\
+Ты — Lead Business Analyst с 15-летним опытом в крупных IT-проектах. \
+Твоя задача — превратить краткую бизнес-идею или задачу пользователя \
+в исчерпывающий пакет проектной документации. \
+Выдай ответ строго на русском языке в формате Markdown. \
+Разделяй блоки СТРОГО специальными маркерами, как указано ниже. \
+НЕ добавляй лишнего текста между маркерами и контентом. \
+Используй профессиональный, конкретный язык. Избегай воды и общих фраз.
 
-Твоя задача — декомпозировать этот визуальный процесс в текстовую проектную документацию на русском языке.
+Структура ответа:
 
-Ответ строго в следующем формате — ТРИ раздела, каждый начинается с маркера НА ОТДЕЛЬНОЙ строке:
+[SECTION_VISION]
+## Концепция и Границы проекта (Vision & Scope)
 
----SECTION1---
-[содержимое]
----SECTION2---
-[содержимое]
----SECTION3---
-[содержимое]
+### Бизнес-цели
+_Перечисли 3–5 конкретных бизнес-целей с измеримыми KPI._
+- **Цель 1:** … | **KPI:** …
+- **Цель 2:** … | **KPI:** …
 
-===== РАЗДЕЛ 1: ПОЛНАЯ СПЕЦИФИКАЦИЯ ТРЕБОВАНИЙ =====
-Markdown-документ по четырём уровням:
+### Границы проекта
 
-# Спецификация требований
+**Входит в рамки разработки:**
+- …
 
-## 1.1 Бизнес-требования (Business Requirements)
-- Бизнес-цели автоматизации данного процесса
-- Таблица: Метрика | As-Is (текущее) | To-Be (целевое) — с конкретными цифрами
+**НЕ входит в рамки (Out of Scope):**
+- …
 
-## 1.2 Пользовательские требования (User Requirements)
-- Use Case по Коберну на основе шагов BPMN
-- Таблица: Шаг | Актор | Действие | Результат
-- Предусловия, расширения, постусловия
+### Глоссарий проекта
+| Термин | Определение |
+|---|---|
+| … | … |
 
-## 1.3 Функциональные требования (Functional Requirements)
-- FR-XX для каждого шага BPMN: валидации, интеграции, триггеры, уведомления
+[SECTION_SRS]
+## Спецификация требований (SRS)
 
-## 1.4 Нефункциональные требования (Non-Functional Requirements)
-- NFR-XX: Производительность, Безопасность, Доступность, Интерфейс — с метриками
+### Функциональные требования
+_Нумерованный список конкретных требований к функциям системы._
+1. **FR-01 [Название]:** …
+2. **FR-02 [Название]:** …
 
-===== РАЗДЕЛ 2: МАТРИЦА ТРАССИРОВКИ И ПРИОРИТИЗАЦИИ (MoSCoW RTM) =====
-Markdown-таблица, минимум 15 строк, привязанная к шагам исходного BPMN:
+### Нефункциональные требования
+| Категория | Требование | Метрика |
+|---|---|---|
+| Производительность | … | … |
+| Безопасность | … | … |
+| UI/UX | … | … |
+| Надёжность | … | … |
 
-# Матрица трассировки требований (RTM)
+[SECTION_USECASES]
+## Сценарии взаимодействия (Use Cases & User Stories)
 
-| ID | Тип | Описание функциональной фичи | Связь с шагом BPMN | Приоритет |
-|----|-----|------------------------------|---------------------|-----------|
-[Must / Should / Could]
+### Роли и Акторы
+| Актор | Роль в системе |
+|---|---|
+| … | … |
 
-===== РАЗДЕЛ 3: БЭКЛОГ ДЛЯ JIRA (User Stories) =====
-Готовые User Stories для разработчиков — по одной истории на каждый ключевой шаг BPMN:
+### Развёрнутый Use Case (Кокберн)
+**Название:** …
+**Актор:** …
+**Предусловия:** …
+**Основной сценарий:**
+1. …
+2. …
+**Расширения (альтернативы/ошибки):**
+- 3a. …
+**Постусловия:** …
 
-# Бэклог проекта — User Stories
+### User Stories для разработчиков
+- [ ] **US-01:** Как [Роль], я хочу [Функционал], чтобы [Ценность].
+- [ ] **US-02:** Как [Роль], я хочу [Функционал], чтобы [Ценность].
 
-## US-XX: [Краткое название]
-**Роль:** [Актор из BPMN]
-**История:** Как [Роль], я хочу [Функционал], чтобы [Бизнес-ценность].
+[SECTION_RTM]
+## Матрица трассировки требований (RTM / MoSCoW)
 
-**Критерии приёмки (Acceptance Criteria):**
-- [ ] AC-1: ...
-- [ ] AC-2: ...
-- [ ] AC-3: ...
+| ID | Требование | Тип | Приоритет MoSCoW | Связанный Use Case | Статус |
+|---|---|---|---|---|---|
+| FR-01 | … | Функц. | Must Have | UC-01 | К разработке |
+| FR-02 | … | Функц. | Should Have | UC-02 | К разработке |
+| NFR-01 | … | Нефункц. | Must Have | — | К разработке |
+"""
 
----
+_USER_MSG_TEMPLATE = """\
+Бизнес-задача / идея проекта:
 
-ВАЖНО: Никаких пояснений вне трёх разделов. Маркеры ---SECTION1---, ---SECTION2---, ---SECTION3--- строго на отдельных строках. Всё содержимое строго на русском языке."""
+{task}
 
-
-def _parse_ai_response(text: str) -> dict:
-    def extract_section(n, text):
-        start = f"---SECTION{n}---"
-        end   = f"---SECTION{n+1}---"
-        idx_s = text.find(start)
-        if idx_s == -1:
-            return ""
-        idx_s += len(start)
-        idx_e = text.find(end, idx_s)
-        chunk = text[idx_s: idx_e if idx_e != -1 else None]
-        return chunk.strip()
-
-    return {
-        "spec":    extract_section(1, text),
-        "rtm":     extract_section(2, text),
-        "backlog": extract_section(3, text),
-    }
+Сгенерируй полный комплект проектной документации согласно инструкции. \
+Будь конкретным и детальным — это реальный рабочий документ для команды разработки.
+"""
 
 
-def _call_ai(bpmn_context: str, user_goals: str) -> dict:
-    client, model = get_ai_client()
-    if client is None:
-        return None
-    today = datetime.now().strftime("%d.%m.%Y")
-    user_msg = f"Сегодня: {today}.\n\n{bpmn_context}"
-    if user_goals.strip():
-        user_msg += f"\n\nДополнительные бизнес-цели: {user_goals.strip()}"
-    resp = client.chat.completions.create(
-        model=model,
+# ---------------------------------------------------------------------------
+# AI CALL
+# ---------------------------------------------------------------------------
+_SECTIONS = ["VISION", "SRS", "USECASES", "RTM"]
+
+def _parse_sections(text: str) -> dict[str, str]:
+    """Split AI response into named sections by [SECTION_XXX] markers."""
+    result: dict[str, str] = {}
+    pattern = r"\[SECTION_(" + "|".join(_SECTIONS) + r")\]"
+    parts = re.split(pattern, text)
+    # parts = [pre, NAME, content, NAME, content, ...]
+    i = 1
+    while i < len(parts) - 1:
+        name    = parts[i].strip()
+        content = parts[i + 1].strip()
+        result[name] = content
+        i += 2
+    return result
+
+
+def call_ai(task: str) -> dict:
+    """Call Groq and return parsed sections + full markdown."""
+    client = _get_groq()
+    completion = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         messages=[
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user",   "content": user_msg},
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user",   "content": _USER_MSG_TEMPLATE.format(task=task)},
         ],
-        temperature=0.3,
-        max_tokens=4000,
+        temperature=0.4,
+        max_tokens=4096,
     )
-    return _parse_ai_response(str(resp.choices[0].message.content))
+    raw = completion.choices[0].message.content or ""
+    sections = _parse_sections(raw)
+    full_md  = raw
+    return {"sections": sections, "full_md": full_md}
 
 
 # ---------------------------------------------------------------------------
-# DEMO CONTENT
+# DEMO CONTENT (no API key)
 # ---------------------------------------------------------------------------
-DEMO_SPEC = """# Спецификация требований — Демо-режим
+_DEMO_SECTIONS = {
+    "VISION": """\
+## Концепция и Границы проекта (Vision & Scope)
 
-**Дата:** {date} | **Статус:** Демо | **Источник:** BAlance.ai
+### Бизнес-цели
+- **Цель 1:** Автоматизировать складской учёт | **KPI:** Сократить время инвентаризации на 70% за 6 месяцев
+- **Цель 2:** Исключить ручные ошибки при приёмке | **KPI:** 0 расхождений в отчётах ≥ 99% операций
+- **Цель 3:** Ускорить отгрузку товара | **KPI:** Среднее время отгрузки ≤ 15 минут
 
----
+### Границы проекта
 
-## 1.1 Бизнес-требования (Business Requirements)
+**Входит в рамки разработки:**
+- Учёт остатков на складе в реальном времени
+- Приёмка и отгрузка товаров с QR/штрих-кодами
+- Отчёты по движению товаров (ежедневные / ежемесячные)
+- Роли пользователей: кладовщик, менеджер, директор
 
-**Цель:** Автоматизировать процесс согласования заявок и устранить ручной контроль на каждом шаге.
+**НЕ входит в рамки (Out of Scope):**
+- Интеграция с 1С (следующая фаза)
+- Мобильное приложение (следующая фаза)
+- Управление поставщиками и закупками
 
-| Метрика | As-Is | To-Be |
-|---------|-------|-------|
-| Время согласования | 5–7 рабочих дней | < 4 часов |
-| Доля ручных операций | ~75% | < 10% |
-| Ошибки при передаче данных | ~12% | < 1% |
-| SLA первичной обработки | нет контроля | ≤ 2 часов |
+### Глоссарий проекта
+| Термин | Определение |
+|---|---|
+| SKU | Артикул складской единицы учёта |
+| Инвентаризация | Физический подсчёт остатков на складе |
+| Отгрузка | Передача товара клиенту со склада |
+| Приёмка | Принятие товара от поставщика на склад |
+""",
+    "SRS": """\
+## Спецификация требований (SRS)
 
----
+### Функциональные требования
+1. **FR-01 [Авторизация]:** Система должна поддерживать вход по логину и паролю с разграничением прав по ролям.
+2. **FR-02 [Учёт остатков]:** Система должна отображать актуальные остатки по каждому SKU в режиме реального времени.
+3. **FR-03 [Приёмка]:** Кладовщик должен иметь возможность принять товар с автоматическим обновлением остатков.
+4. **FR-04 [Отгрузка]:** Система должна фиксировать отгрузку и уменьшать остаток, создавая накладную.
+5. **FR-05 [Отчёты]:** Менеджер должен иметь доступ к отчётам о движении товаров за произвольный период.
 
-## 1.2 Пользовательские требования (User Requirements)
+### Нефункциональные требования
+| Категория | Требование | Метрика |
+|---|---|---|
+| Производительность | Загрузка любой страницы | ≤ 2 сек при 100 одновременных пользователях |
+| Безопасность | Шифрование паролей | bcrypt, соль ≥ 10 раундов |
+| UI/UX | Минимальное обучение | Новый кладовщик должен освоить систему за 30 минут |
+| Надёжность | Доступность сервиса | 99.5% uptime в рабочее время |
+""",
+    "USECASES": """\
+## Сценарии взаимодействия (Use Cases & User Stories)
 
-**UC-01: Подача и согласование заявки**
+### Роли и Акторы
+| Актор | Роль в системе |
+|---|---|
+| Кладовщик | Осуществляет приёмку и отгрузку товаров |
+| Менеджер | Просматривает отчёты и управляет номенклатурой |
+| Директор | Доступ к сводным аналитическим отчётам |
+| Система | Автоматически обновляет остатки и отправляет уведомления |
 
-| Шаг | Актор | Действие | Результат |
-|-----|-------|----------|-----------|
-| 1 | Инициатор | Создаёт заявку в системе | Заявка зарегистрирована |
-| 2 | Система | Авто-валидация полей | Заявка направлена на согласование |
-| 3 | Руководитель | Рассматривает и согласует | Статус изменён |
-| 4 | Система | Отправляет уведомление | Инициатор получает результат |
+### Развёрнутый Use Case (Кокберн)
+**Название:** UC-01 Приёмка товара на склад
+**Актор:** Кладовщик
+**Предусловия:** Кладовщик авторизован; у поставщика есть накладная
+**Основной сценарий:**
+1. Кладовщик открывает раздел «Приёмка».
+2. Сканирует QR-код или вводит номер накладной.
+3. Система отображает список товаров из накладной.
+4. Кладовщик сканирует каждую единицу и подтверждает количество.
+5. Система обновляет остатки и создаёт электронную приходную накладную.
+**Расширения:**
+- 4a. Количество не совпадает → система запрашивает подтверждение расхождения.
+- 4b. SKU не найден → система предлагает создать новую позицию.
+**Постусловия:** Остатки обновлены; приходная накладная сохранена в системе.
 
-- **Предусловия:** Пользователь авторизован, шаблон заявки настроен
-- **Расширения:** Если согласующий недоступен > 24ч — авто-эскалация
-- **Постусловия:** Заявка в финальном статусе, аудит-лог сохранён
+### User Stories для разработчиков
+- [ ] **US-01:** Как кладовщик, я хочу сканировать штрих-код товара, чтобы автоматически обновлять остатки без ручного ввода.
+- [ ] **US-02:** Как менеджер, я хочу выгружать отчёт за период в Excel, чтобы анализировать движение товаров.
+- [ ] **US-03:** Как директор, я хочу видеть дашборд с ключевыми метриками склада, чтобы принимать оперативные решения.
+- [ ] **US-04:** Как кладовщик, я хочу получать уведомление при достижении минимального остатка, чтобы своевременно заказывать товар.
+""",
+    "RTM": """\
+## Матрица трассировки требований (RTM / MoSCoW)
 
----
-
-## 1.3 Функциональные требования (Functional Requirements)
-
-- **FR-01** Форма создания заявки с обязательными и необязательными полями
-- **FR-02** Авто-валидация заполненности и форматов при отправке
-- **FR-03** Маршрутизация заявки согласно матрице согласований
-- **FR-04** Уведомления по email/push при смене статуса
-- **FR-05** SLA-таймер с авто-эскалацией при нарушении срока
-- **FR-06** Полный аудит-лог всех действий по заявке
-
----
-
-## 1.4 Нефункциональные требования (Non-Functional Requirements)
-
-- **NFR-01 Производительность:** Обработка заявки ≤ 3 сек при 500 req/min
-- **NFR-02 Безопасность:** Шифрование AES-256, RBAC, журнал доступа
-- **NFR-03 Доступность:** SLA ≥ 99.5%, RTO ≤ 1 час
-- **NFR-04 Интерфейс:** Адаптивный дизайн, время отклика UI < 200 мс
-"""
-
-DEMO_RTM = """# Матрица трассировки требований (RTM)
-
-| ID | Тип | Описание функциональной фичи | Связь с шагом BPMN | Приоритет |
-|----|-----|------------------------------|--------------------|-----------|
-| BR-01 | Бизнес | Сократить время согласования до 4 ч | Весь процесс | Must |
-| BR-02 | Бизнес | Устранить ручной ввод данных на 75% | Шаг 1–2 | Must |
-| BR-03 | Бизнес | SLA первичной обработки ≤ 2 ч | Шаг 2 | Must |
-| UR-01 | Пользователь | Форма создания заявки с валидацией | Шаг 1 | Must |
-| UR-02 | Пользователь | Авто-уведомления при смене статуса | Шаг 4 | Must |
-| UR-03 | Пользователь | Просмотр истории согласований | Шаг 3–4 | Should |
-| FR-01 | Функциональное | Авто-валидация полей формы | Шаг 2 | Must |
-| FR-02 | Функциональное | Маршрутизация по матрице согласований | Шаг 3 | Must |
-| FR-03 | Функциональное | SLA-таймер с авто-эскалацией | Шаг 3 | Must |
-| FR-04 | Функциональное | Email/Push уведомления | Шаг 4 | Should |
-| FR-05 | Функциональное | Аудит-лог всех действий | Все шаги | Should |
-| NFR-01 | Нефункциональное | Производительность ≤ 3 сек | Все шаги | Must |
-| NFR-02 | Нефункциональное | RBAC + шифрование AES-256 | Все шаги | Must |
-| NFR-03 | Нефункциональное | SLA ≥ 99.5% uptime | Вся система | Must |
-| NFR-04 | Нефункциональное | Адаптивный UI | Шаг 1, 4 | Could |
-"""
-
-DEMO_BACKLOG = """# Бэклог проекта — User Stories
-
-## US-01: Создание заявки
-**Роль:** Инициатор
-**История:** Как Инициатор, я хочу создать заявку через веб-форму, чтобы запустить процесс согласования без участия администратора.
-
-**Критерии приёмки (Acceptance Criteria):**
-- [ ] AC-1: Форма доступна после авторизации и содержит все обязательные поля
-- [ ] AC-2: При отправке незаполненных обязательных полей отображается ошибка
-- [ ] AC-3: Успешно созданная заявка получает уникальный номер и статус «Новая»
-
----
-
-## US-02: Авто-валидация данных
-**Роль:** Система
-**История:** Как Система, я хочу автоматически проверять корректность данных заявки, чтобы исключить ошибки до начала согласования.
-
-**Критерии приёмки (Acceptance Criteria):**
-- [ ] AC-1: Проверяются форматы всех полей (дата, сумма, email)
-- [ ] AC-2: При ошибке пользователь видит конкретное сообщение с указанием поля
-- [ ] AC-3: Валидная заявка немедленно направляется согласующему
-
----
-
-## US-03: Согласование заявки
-**Роль:** Руководитель
-**История:** Как Руководитель, я хочу получать уведомления о новых заявках и согласовывать их в один клик, чтобы не тратить время на поиск документов.
-
-**Критерии приёмки (Acceptance Criteria):**
-- [ ] AC-1: Уведомление приходит в течение 5 минут после поступления заявки
-- [ ] AC-2: Из уведомления можно перейти к заявке и принять решение без дополнительной авторизации
-- [ ] AC-3: При нарушении SLA (> 24ч) система автоматически эскалирует заявку
-
----
-
-## US-04: Уведомление об итоге
-**Роль:** Инициатор
-**История:** Как Инициатор, я хочу получать уведомление о результате согласования, чтобы своевременно принять следующие шаги.
-
-**Критерии приёмки (Acceptance Criteria):**
-- [ ] AC-1: Уведомление приходит в течение 2 минут после принятия решения
-- [ ] AC-2: В уведомлении указан результат, комментарий и ссылка на заявку
-- [ ] AC-3: История уведомлений доступна в личном кабинете
-"""
-
-DEMO_STATS = {"task_count": 4, "actor_count": 2, "process_name": "Согласование заявок (демо)"}
+| ID | Требование | Тип | Приоритет MoSCoW | Связанный Use Case | Статус |
+|---|---|---|---|---|---|
+| FR-01 | Авторизация по ролям | Функц. | Must Have | UC-00 | К разработке |
+| FR-02 | Учёт остатков в реальном времени | Функц. | Must Have | UC-01 | К разработке |
+| FR-03 | Приёмка товара | Функц. | Must Have | UC-01 | К разработке |
+| FR-04 | Отгрузка и накладная | Функц. | Must Have | UC-02 | К разработке |
+| FR-05 | Отчёты за период | Функц. | Should Have | UC-03 | К разработке |
+| NFR-01 | Производительность ≤ 2 сек | Нефункц. | Must Have | — | К разработке |
+| NFR-02 | Шифрование паролей bcrypt | Нефункц. | Must Have | — | К разработке |
+| NFR-03 | Excel-экспорт отчётов | Функц. | Could Have | UC-03 | К разработке |
+| NFR-04 | Мобильная версия | Функц. | Won't Have | — | Следующая фаза |
+""",
+}
 
 
 # ---------------------------------------------------------------------------
-# Routes
+# HTML HELPERS
 # ---------------------------------------------------------------------------
-@app.get("/", response_class=HTMLResponse)
-async def index():
-    with open(_HTML_FILE, "r", encoding="utf-8") as f:
+def _read_html() -> str:
+    with open(_HTML_FILE, encoding="utf-8") as f:
         return f.read()
 
 
+# ---------------------------------------------------------------------------
+# ROUTES
+# ---------------------------------------------------------------------------
+@app.get("/", response_class=HTMLResponse)
+async def index():
+    return HTMLResponse(_read_html())
+
+
 @app.post("/analyze")
-async def analyze(
-    goals: str = Form(default=""),
-    file: UploadFile = File(default=None),
-):
-    bpmn_data    = None
-    parse_error  = None
+async def analyze(task: str = Form(...)):
+    task = task.strip()
+    if not task:
+        return JSONResponse({"error": "Введите описание бизнес-задачи"}, status_code=400)
 
-    if file and file.filename:
-        fname = (file.filename or "").lower()
-        if not fname.endswith(".bpmn"):
-            return JSONResponse(
-                {"error": "Поддерживается только формат .bpmn. Загрузите BPMN 2.0-файл."},
-                status_code=400,
-            )
-        try:
-            file.file.seek(0)
-            content = file.file.read()
-            bpmn_data = parse_bpmn(content)
-            if bpmn_data["task_count"] == 0:
-                parse_error = "В файле не найдено именованных шагов. Убедитесь, что задачи в BPMN имеют атрибут name."
-        except Exception as e:
-            return JSONResponse({"error": f"Ошибка чтения BPMN: {e}"}, status_code=400)
-    else:
-        if not goals.strip():
-            return JSONResponse(
-                {"error": "Загрузите .bpmn-файл или введите описание бизнес-процесса в поле целей."},
-                status_code=400,
-            )
-        # Text-only mode: construct a minimal context from the goals text
-        bpmn_data = {
-            "tasks":        [],
-            "actors":       [],
-            "process_name": "",
-            "task_count":   0,
-            "actor_count":  0,
-            "context_str":  f"Описание процесса от пользователя: {goals.strip()}",
-        }
+    has_key = bool(os.environ.get("GROQ_API_KEY", "").strip())
 
-    client, _  = get_ai_client()
-    is_demo    = client is None
-    demo_reason = None
+    if not has_key:
+        full_md = "\n\n".join(
+            f"[SECTION_{k}]\n{v}" for k, v in _DEMO_SECTIONS.items()
+        )
+        return JSONResponse({
+            "sections": _DEMO_SECTIONS,
+            "full_md":  full_md,
+            "demo":     True,
+        })
 
-    if is_demo:
-        ai = None
-        demo_reason = "GROQ_API_KEY не задан — показан демо-шаблон"
-    else:
-        try:
-            ai = _call_ai(bpmn_data["context_str"], goals)
-            if not ai or not ai.get("spec"):
-                ai = None
-                is_demo = True
-                demo_reason = "AI вернул пустой ответ — показан демо-шаблон"
-        except Exception as e:
-            ai = None
-            is_demo = True
-            demo_reason = f"Ошибка AI: {e}"
-
-    today = datetime.now().strftime("%d.%m.%Y")
-    if ai:
-        spec    = ai["spec"]
-        rtm     = ai["rtm"]
-        backlog = ai["backlog"]
-    else:
-        spec    = DEMO_SPEC.format(date=today)
-        rtm     = DEMO_RTM
-        backlog = DEMO_BACKLOG
-
-    stats = {
-        "task_count":   bpmn_data["task_count"],
-        "actor_count":  bpmn_data["actor_count"],
-        "process_name": bpmn_data["process_name"],
-        "tasks":        bpmn_data["tasks"][:10],
-        "actors":       bpmn_data["actors"][:6],
-        "parse_error":  parse_error,
-    } if bpmn_data["task_count"] > 0 else None
-
-    full_md = f"# BAlance.ai — Проектная документация\n\n**Дата:** {today}\n\n---\n\n{spec}\n\n---\n\n{rtm}\n\n---\n\n{backlog}"
-
-    return JSONResponse({
-        "spec":         spec,
-        "rtm":          rtm,
-        "backlog":      backlog,
-        "full_md":      full_md,
-        "demo":         is_demo,
-        "demo_reason":  demo_reason,
-        "stats":        stats,
-    })
+    try:
+        result = call_ai(task)
+        # Fall back to demo if sections are mostly empty
+        if len(result["sections"]) < 2:
+            result["sections"] = _DEMO_SECTIONS
+        result["demo"] = False
+        return JSONResponse(result)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ---------------------------------------------------------------------------
 # MARKDOWN → DOCX CONVERTER
 # ---------------------------------------------------------------------------
 def _bold_run(para, text: str):
-    """Add a paragraph run with inline **bold** support."""
     parts = re.split(r"\*\*(.+?)\*\*", text)
     for i, part in enumerate(parts):
         if not part:
             continue
         run = para.add_run(part)
-        if i % 2 == 1:          # odd indices are inside **...**
+        if i % 2 == 1:
             run.bold = True
 
 
 def md_to_docx(md_text: str) -> bytes:
     try:
         from docx import Document
-        from docx.shared import Pt, RGBColor, Inches
-        from docx.oxml.ns import qn
+        from docx.shared import Pt
     except ImportError:
         raise RuntimeError("python-docx не установлен")
 
     doc = Document()
-
-    # Global style tweaks
     style = doc.styles["Normal"]
     style.font.name = "Calibri"
     style.font.size = Pt(11)
@@ -501,15 +350,14 @@ def md_to_docx(md_text: str) -> bytes:
                 run = p.add_run(cell_text)
                 if ri == 0:
                     run.bold = True
-        table_rows = []
+        table_rows.clear()
+        doc.add_paragraph()
 
     while i < len(lines):
         raw = lines[i]
         s   = raw.strip()
 
-        # ── Table rows ──────────────────────────────────────────
         if s.startswith("|") and s.endswith("|"):
-            # Skip separator lines like |---|---|
             if re.match(r"^[\|\s\-:]+$", s):
                 i += 1
                 continue
@@ -518,23 +366,17 @@ def md_to_docx(md_text: str) -> bytes:
             i += 1
             continue
 
-        # Flush any pending table before processing non-table line
         flush_table()
 
-        # ── Headings ─────────────────────────────────────────────
         if s.startswith("### "):
             doc.add_heading(s[4:], level=3)
         elif s.startswith("## "):
             doc.add_heading(s[3:], level=2)
         elif s.startswith("# "):
             doc.add_heading(s[2:], level=1)
-
-        # ── Horizontal rule ──────────────────────────────────────
         elif s == "---":
             doc.add_paragraph("─" * 55)
-
-        # ── Bullet list ──────────────────────────────────────────
-        elif re.match(r"^[-*] \[[ x]\] ", s):      # checkbox
+        elif re.match(r"^[-*] \[[ x]\] ", s):
             text = re.sub(r"^[-*] \[[ x]\] ", "☐ ", s)
             p = doc.add_paragraph(style="List Bullet")
             _bold_run(p, text)
@@ -544,15 +386,8 @@ def md_to_docx(md_text: str) -> bytes:
         elif re.match(r"^\d+\. ", s):
             p = doc.add_paragraph(style="List Number")
             _bold_run(p, re.sub(r"^\d+\. ", "", s))
-
-        # ── Bold-only line (e.g. **Роль:** xxx) ──────────────────
-        elif s.startswith("**") and s:
-            p = doc.add_paragraph()
-            _bold_run(p, s)
-
-        # ── Regular paragraph (skip blanks) ──────────────────────
         elif s:
-            clean = re.sub(r"`([^`]+)`", r"\1", s)   # strip code ticks
+            clean = re.sub(r"`([^`]+)`", r"\1", s)
             p = doc.add_paragraph()
             _bold_run(p, clean)
 
@@ -567,25 +402,24 @@ def md_to_docx(md_text: str) -> bytes:
 
 
 # ---------------------------------------------------------------------------
-# MARKDOWN → PDF CONVERTER  (ReportLab — pure Python, full Cyrillic support)
+# MARKDOWN → PDF CONVERTER  (ReportLab)
 # ---------------------------------------------------------------------------
 def md_to_pdf(md_text: str) -> bytes:
     try:
         from reportlab.lib.pagesizes import A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib.units import cm
         from reportlab.lib import colors
         from reportlab.platypus import (
             SimpleDocTemplate, Paragraph, Spacer, HRFlowable,
-            Table, TableStyle, ListFlowable, ListItem,
+            Table, TableStyle,
         )
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
     except ImportError:
         raise RuntimeError("reportlab не установлен")
 
-    # Register a Unicode font for Cyrillic if available
-    _FONT_NAME = "Helvetica"      # safe ASCII fallback
+    _FONT_NAME = "Helvetica"
     _FONT_BOLD = "Helvetica-Bold"
     for candidate in [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -595,7 +429,7 @@ def md_to_pdf(md_text: str) -> bytes:
         if os.path.exists(candidate):
             try:
                 pdfmetrics.registerFont(TTFont("UniFont", candidate))
-                bold_path = candidate.replace(".ttf", "-Bold.ttf").replace("Regular", "Bold")
+                bold_path = candidate.replace("Regular", "Bold")
                 if os.path.exists(bold_path):
                     pdfmetrics.registerFont(TTFont("UniFont-Bold", bold_path))
                     _FONT_BOLD = "UniFont-Bold"
@@ -604,32 +438,22 @@ def md_to_pdf(md_text: str) -> bytes:
                 pass
             break
 
-    buf = BytesIO()
-    doc = SimpleDocTemplate(
-        buf,
-        pagesize=A4,
-        leftMargin=2*cm, rightMargin=2*cm,
-        topMargin=2*cm,  bottomMargin=2*cm,
-    )
-
     accent = colors.HexColor("#FF385C")
     dark   = colors.HexColor("#222222")
-    light  = colors.HexColor("#717171")
 
-    styles = getSampleStyleSheet()
     sty = {
-        "h1": ParagraphStyle("h1", fontName=_FONT_BOLD, fontSize=16, textColor=dark,
-                              spaceAfter=8, spaceBefore=14, leading=20),
-        "h2": ParagraphStyle("h2", fontName=_FONT_BOLD, fontSize=12, textColor=accent,
-                              spaceAfter=5, spaceBefore=12, leading=16),
-        "h3": ParagraphStyle("h3", fontName=_FONT_BOLD, fontSize=10.5, textColor=dark,
-                              spaceAfter=4, spaceBefore=8, leading=14),
-        "body": ParagraphStyle("body", fontName=_FONT_NAME, fontSize=10, textColor=dark,
-                               spaceAfter=4, leading=14),
-        "bullet": ParagraphStyle("bullet", fontName=_FONT_NAME, fontSize=10, textColor=dark,
-                                 leftIndent=14, spaceAfter=2, leading=13),
-        "cell": ParagraphStyle("cell", fontName=_FONT_NAME, fontSize=8.5, textColor=dark,
-                               leading=11),
+        "h1":      ParagraphStyle("h1",      fontName=_FONT_BOLD, fontSize=16, textColor=dark,
+                                  spaceAfter=8,  spaceBefore=14, leading=20),
+        "h2":      ParagraphStyle("h2",      fontName=_FONT_BOLD, fontSize=12, textColor=accent,
+                                  spaceAfter=5,  spaceBefore=12, leading=16),
+        "h3":      ParagraphStyle("h3",      fontName=_FONT_BOLD, fontSize=10.5, textColor=dark,
+                                  spaceAfter=4,  spaceBefore=8,  leading=14),
+        "body":    ParagraphStyle("body",    fontName=_FONT_NAME, fontSize=10, textColor=dark,
+                                  spaceAfter=4,  leading=14),
+        "bullet":  ParagraphStyle("bullet",  fontName=_FONT_NAME, fontSize=10, textColor=dark,
+                                  leftIndent=14, spaceAfter=2,   leading=13),
+        "cell":    ParagraphStyle("cell",    fontName=_FONT_NAME, fontSize=8.5, textColor=dark,
+                                  leading=11),
         "cell_hd": ParagraphStyle("cell_hd", fontName=_FONT_BOLD, fontSize=8.5,
                                   textColor=colors.white, leading=11),
     }
@@ -640,7 +464,11 @@ def md_to_pdf(md_text: str) -> bytes:
         t = re.sub(r"`([^`]+)`",   r"\1", t)
         return t.strip()
 
-    story = []
+    buf  = BytesIO()
+    doc  = SimpleDocTemplate(buf, pagesize=A4,
+                              leftMargin=2*cm, rightMargin=2*cm,
+                              topMargin=2*cm,  bottomMargin=2*cm)
+    story: list = []
     lines = md_text.splitlines()
     i = 0
     table_rows: list = []
@@ -650,7 +478,7 @@ def md_to_pdf(md_text: str) -> bytes:
         if not table_rows:
             return
         n_cols = max(len(r) for r in table_rows)
-        tdata = []
+        tdata  = []
         for ri, row in enumerate(table_rows):
             row_cells = []
             for ci in range(n_cols):
@@ -661,12 +489,12 @@ def md_to_pdf(md_text: str) -> bytes:
         col_w = (A4[0] - 4*cm) / n_cols
         t = Table(tdata, colWidths=[col_w]*n_cols, repeatRows=1)
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), dark),
-            ("TEXTCOLOR",  (0, 0), (-1, 0), colors.white),
-            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f9f9f9")]),
-            ("GRID",       (0, 0), (-1, -1), 0.4, colors.HexColor("#e0e0e0")),
-            ("VALIGN",     (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BACKGROUND",    (0, 0), (-1, 0), dark),
+            ("TEXTCOLOR",     (0, 0), (-1, 0), colors.white),
+            ("ROWBACKGROUNDS",(0, 1), (-1, -1), [colors.white, colors.HexColor("#f9f9f9")]),
+            ("GRID",          (0, 0), (-1, -1), 0.4, colors.HexColor("#e0e0e0")),
+            ("VALIGN",        (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING",    (0, 0), (-1, -1), 4),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ("LEFTPADDING",   (0, 0), (-1, -1), 6),
         ]))
@@ -677,6 +505,11 @@ def md_to_pdf(md_text: str) -> bytes:
     while i < len(lines):
         raw = lines[i]
         s   = raw.strip()
+
+        # Skip section markers
+        if s.startswith("[SECTION_"):
+            i += 1
+            continue
 
         if s.startswith("|") and s.endswith("|"):
             if re.match(r"^[\|\s\-:]+$", s):
@@ -713,7 +546,6 @@ def md_to_pdf(md_text: str) -> bytes:
         i += 1
 
     flush_table()
-
     doc.build(story)
     buf.seek(0)
     return buf.getvalue()
@@ -728,7 +560,7 @@ async def download_docx(content: str = Form(...)):
         data = md_to_docx(content)
     except Exception as e:
         return JSONResponse({"error": f"Ошибка генерации DOCX: {e}"}, status_code=500)
-    filename = f"balance_ai_spec_{datetime.now().strftime('%Y%m%d')}.docx"
+    filename = f"balance_ai_{datetime.now().strftime('%Y%m%d')}.docx"
     return StreamingResponse(
         BytesIO(data),
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -742,7 +574,7 @@ async def download_pdf(content: str = Form(...)):
         data = md_to_pdf(content)
     except Exception as e:
         return JSONResponse({"error": f"Ошибка генерации PDF: {e}"}, status_code=500)
-    filename = f"balance_ai_spec_{datetime.now().strftime('%Y%m%d')}.pdf"
+    filename = f"balance_ai_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         BytesIO(data),
         media_type="application/pdf",
@@ -751,7 +583,7 @@ async def download_pdf(content: str = Form(...)):
 
 
 # ---------------------------------------------------------------------------
-# Entry point
+# ENTRY POINT
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
