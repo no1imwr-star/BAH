@@ -6,7 +6,6 @@
 <title>BAlance.ai — ИИ-Автопилот Бизнес-аналитика</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --accent:  #FF385C;
     --dark:    #222222;
@@ -15,164 +14,93 @@
     --bg:      #f7f7f7;
     --white:   #ffffff;
     --radius:  16px;
-    --shadow:  0 2px 16px rgba(0,0,0,.1);
+    --shadow:  0 2px 20px rgba(0,0,0,.09);
   }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--dark);
-    min-height: 100vh;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--dark); min-height: 100vh; }
 
   /* ── HEADER ── */
-  header {
-    background: var(--white);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .header-inner {
-    max-width: 900px; margin: 0 auto;
-    padding: 14px 24px;
-    display: flex; align-items: center; justify-content: space-between;
-  }
+  header { background: var(--white); border-bottom: 1px solid var(--border);
+           position: sticky; top: 0; z-index: 200; }
+  .header-inner { max-width: 960px; margin: 0 auto; padding: 13px 24px;
+                  display: flex; align-items: center; justify-content: space-between; }
   .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .logo-icon {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    color: #fff; font-weight: 800; font-size: 14px; letter-spacing: -.5px;
-  }
-  .logo-text { font-weight: 700; font-size: 1rem; color: var(--dark); }
-  .logo-sub  { font-size: 0.72rem; color: var(--mid); margin-top: 1px; }
-  .badge {
-    font-size: 0.72rem; font-weight: 600; padding: 4px 10px;
-    border-radius: 20px; background: #f5f5f5; color: var(--mid);
-    border: 1px solid var(--border);
-  }
+  .logo-icon { width: 34px; height: 34px; border-radius: 9px; background: var(--accent);
+               display: flex; align-items: center; justify-content: center;
+               color: #fff; font-weight: 800; font-size: 13px; letter-spacing: -.5px; }
+  .logo-text { font-weight: 700; font-size: .95rem; color: var(--dark); }
+  .logo-sub  { font-size: .68rem; color: var(--mid); margin-top: 1px; }
+  .badge { font-size: .7rem; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+           background: #f5f5f5; color: var(--mid); border: 1px solid var(--border); }
 
   /* ── HERO ── */
-  .hero {
-    max-width: 680px; margin: 0 auto;
-    padding: 60px 24px 40px;
-    text-align: center;
-  }
-  .hero-chip {
-    display: inline-block; font-size: 0.72rem; font-weight: 700;
-    letter-spacing: .08em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: 16px;
-  }
-  .hero h1 {
-    font-size: clamp(1.9rem, 5vw, 2.8rem);
-    font-weight: 800; line-height: 1.18; color: var(--dark);
-    margin-bottom: 14px;
-  }
-  .hero p {
-    font-size: 1.05rem; color: var(--mid); line-height: 1.6;
-  }
+  .hero { max-width: 680px; margin: 0 auto; padding: 58px 24px 36px; text-align: center; }
+  .hero-chip { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+               text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .hero h1 { font-size: clamp(1.9rem,5vw,2.75rem); font-weight: 800; line-height: 1.18;
+             color: var(--dark); margin-bottom: 13px; }
+  .hero p  { font-size: 1.02rem; color: var(--mid); line-height: 1.6; }
 
   /* ── INPUT CARD ── */
-  .card {
-    background: var(--white); border-radius: var(--radius);
-    box-shadow: var(--shadow); border: 1px solid var(--border);
-  }
-  .input-card {
-    max-width: 680px; margin: 0 auto 32px;
-    padding: 28px 28px 22px;
-  }
-  .input-label {
-    font-size: 0.82rem; font-weight: 600; color: var(--dark);
-    margin-bottom: 10px; display: block;
-  }
-  textarea {
-    width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
-    padding: 14px 16px; font-size: 0.97rem; font-family: inherit;
-    color: var(--dark); resize: vertical; min-height: 130px;
-    transition: border-color .15s; outline: none;
-    line-height: 1.55;
-  }
+  .input-wrap { max-width: 680px; margin: 0 auto 28px; padding: 0 24px; }
+  .card { background: var(--white); border-radius: var(--radius);
+          box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .input-card { padding: 26px 26px 20px; }
+  .input-label { font-size: .82rem; font-weight: 600; color: var(--dark);
+                 margin-bottom: 10px; display: block; }
+  textarea { width: 100%; border: 1.5px solid var(--border); border-radius: 12px;
+             padding: 14px 16px; font-size: .95rem; font-family: inherit;
+             color: var(--dark); resize: vertical; min-height: 128px;
+             transition: border-color .15s; outline: none; line-height: 1.55; }
   textarea:focus { border-color: var(--dark); }
-  .input-hint {
-    font-size: 0.75rem; color: var(--mid); margin-top: 8px; line-height: 1.5;
-  }
+  .input-hint { font-size: .74rem; color: var(--mid); margin-top: 7px; line-height: 1.5; }
   .input-hint strong { color: var(--dark); }
-  .btn-submit {
-    width: 100%; margin-top: 16px;
-    padding: 15px; border: none; border-radius: 12px;
-    background: var(--accent); color: #fff;
-    font-size: 0.97rem; font-weight: 700; font-family: inherit;
-    cursor: pointer; transition: background .15s, transform .1s;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-  }
+  .btn-submit { width: 100%; margin-top: 15px; padding: 15px; border: none; border-radius: 12px;
+                background: var(--accent); color: #fff; font-size: .95rem; font-weight: 700;
+                font-family: inherit; cursor: pointer; display: flex; align-items: center;
+                justify-content: center; gap: 8px;
+                transition: background .15s, transform .1s; }
   .btn-submit:hover:not(:disabled) { background: #e0314f; transform: translateY(-1px); }
-  .btn-submit:disabled { opacity: .65; cursor: not-allowed; transform: none; }
+  .btn-submit:disabled { opacity: .62; cursor: not-allowed; transform: none; }
 
   /* ── LOADER ── */
-  #loader { display: none; max-width: 680px; margin: 0 auto 20px; text-align: center; }
-  .loader-inner {
-    background: var(--white); border-radius: var(--radius);
-    border: 1px solid var(--border); box-shadow: var(--shadow);
-    padding: 36px; display: flex; flex-direction: column;
-    align-items: center; gap: 16px;
-  }
-  .spinner {
-    width: 40px; height: 40px; border-radius: 50%;
-    border: 3px solid #f0f0f0; border-top-color: var(--accent);
-    animation: spin .8s linear infinite;
-  }
+  #loader { display: none; max-width: 680px; margin: 0 auto 20px; padding: 0 24px; }
+  .loader-inner { background: var(--white); border-radius: var(--radius);
+                  border: 1px solid var(--border); box-shadow: var(--shadow);
+                  padding: 34px; display: flex; flex-direction: column;
+                  align-items: center; gap: 14px; }
+  .spinner { width: 38px; height: 38px; border-radius: 50%;
+             border: 3px solid #f0f0f0; border-top-color: var(--accent);
+             animation: spin .75s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loader-txt { font-size: 0.9rem; color: var(--mid); }
-  .loader-steps { display: flex; flex-direction: column; gap: 6px; }
-  .lstep {
-    font-size: 0.78rem; color: #bbb;
-    display: flex; align-items: center; gap: 7px;
-  }
-  .lstep.done { color: #22c55e; }
+  .loader-txt { font-size: .88rem; color: var(--mid); }
+  .loader-steps { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 300px; }
+  .lstep { font-size: .76rem; color: #bbb; display: flex; align-items: center; gap: 7px; }
+  .lstep.done   { color: #22c55e; }
   .lstep.active { color: var(--dark); font-weight: 600; }
-  .dot {
-    width: 7px; height: 7px; border-radius: 50%; background: currentColor;
-    flex-shrink: 0;
-  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-  /* ── DEMO BADGE ── */
-  .demo-note {
-    max-width: 680px; margin: 0 auto 16px;
-    background: #fff8e1; border: 1px solid #ffe082;
-    border-radius: 10px; padding: 10px 16px;
-    font-size: 0.78rem; color: #92610a; line-height: 1.5;
-    display: none;
-  }
-
-  /* ── ERROR ── */
-  .error-box {
-    max-width: 680px; margin: 0 auto 16px;
-    background: #fff1f2; border: 1px solid #fecdd3;
-    border-radius: 10px; padding: 12px 16px;
-    font-size: 0.82rem; color: #be123c;
-    display: none;
-  }
+  /* ── NOTICES ── */
+  .notice { max-width: 680px; margin: 0 auto 14px; border-radius: 10px;
+            padding: 10px 16px; font-size: .77rem; line-height: 1.5; display: none; }
+  .notice.warn  { background: #fff8e1; border: 1px solid #ffe082; color: #92610a; }
+  .notice.error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+  .notice-wrap  { padding: 0 24px; }
 
   /* ── RESULTS ── */
-  #results { display: none; max-width: 900px; margin: 0 auto 60px; padding: 0 24px; }
-
-  .results-header {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
-  }
-  .results-title {
-    font-size: 1.05rem; font-weight: 700; color: var(--dark);
-  }
-  .results-sub { font-size: 0.78rem; color: var(--mid); margin-top: 3px; }
+  #results { display: none; max-width: 960px; margin: 0 auto 60px; padding: 0 24px; }
+  .results-header { display: flex; align-items: flex-start; justify-content: space-between;
+                    gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .results-title { font-size: 1.02rem; font-weight: 700; color: var(--dark); }
+  .results-sub   { font-size: .76rem; color: var(--mid); margin-top: 3px; }
 
   /* export */
   .export-block { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-  .export-label { font-size: 0.76rem; color: var(--mid); font-weight: 600; white-space: nowrap; }
-  .btn-ex {
-    padding: 8px 13px; border-radius: 8px; font-size: 0.76rem; font-weight: 600;
-    cursor: pointer; font-family: inherit; border: 1.5px solid var(--border);
-    display: flex; align-items: center; gap: 5px; white-space: nowrap;
-    transition: background .13s, border-color .13s, transform .1s;
-  }
+  .export-label { font-size: .74rem; color: var(--mid); font-weight: 600; white-space: nowrap; }
+  .btn-ex { padding: 8px 13px; border-radius: 8px; font-size: .74rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 5px;
+            white-space: nowrap; transition: background .13s, transform .1s;
+            border: 1.5px solid var(--border); }
   .btn-ex:hover:not(:disabled) { transform: translateY(-1px); }
   .btn-ex:disabled { opacity: .6; cursor: not-allowed; }
   .btn-md   { background: var(--white); color: var(--dark); }
@@ -181,97 +109,77 @@
   .btn-docx:hover:not(:disabled) { background: #244d8a; }
   .btn-pdf  { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-pdf:hover:not(:disabled)  { background: #e0314f; }
-  .export-err {
-    font-size: 0.75rem; color: #be123c; background: #fff1f2;
-    border: 1px solid #fecdd3; border-radius: 8px; padding: 7px 12px;
-    display: none; margin-top: 6px; width: 100%;
-  }
+  .export-err { font-size: .74rem; color: #be123c; background: #fff1f2;
+                border: 1px solid #fecdd3; border-radius: 8px; padding: 7px 12px;
+                display: none; margin-top: 6px; width: 100%; }
 
   /* ── TABS ── */
-  .tabs-wrap { margin-bottom: 2px; }
-  .tabs {
-    display: flex; gap: 0; border-bottom: 2px solid #ebebeb;
-    overflow-x: auto; scrollbar-width: none;
-  }
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid #ebebeb;
+          overflow-x: auto; scrollbar-width: none; margin-bottom: 0; }
   .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    padding: 12px 18px; border: none; background: none; cursor: pointer;
-    font-family: inherit; font-size: 0.83rem; font-weight: 600;
-    color: var(--mid); border-bottom: 2.5px solid transparent;
-    margin-bottom: -2px; white-space: nowrap;
-    transition: color .15s, border-color .15s;
-  }
+  .tab { padding: 12px 18px; border: none; background: none; cursor: pointer;
+         font-family: inherit; font-size: .82rem; font-weight: 600; color: var(--mid);
+         border-bottom: 2.5px solid transparent; margin-bottom: -2px; white-space: nowrap;
+         transition: color .13s, border-color .13s; }
   .tab:hover  { color: var(--dark); }
   .tab.active { color: var(--dark); border-bottom-color: var(--dark); }
 
   /* ── SECTION CARDS ── */
   .tab-panel { display: none; }
   .tab-panel.active { display: block; }
-  .sec-card {
-    background: var(--white); border-radius: var(--radius);
-    border: 1px solid var(--border); box-shadow: 0 1px 8px rgba(0,0,0,.06);
-    padding: 28px 32px; margin-top: 18px;
-  }
+  .sec-card { background: var(--white); border-radius: var(--radius);
+              border: 1px solid var(--border); box-shadow: 0 1px 8px rgba(0,0,0,.05);
+              padding: 28px 32px; margin-top: 18px; }
 
-  /* ── MARKDOWN CONTENT STYLES ── */
-  .md-body h1 { font-size: 1.3rem; font-weight: 800; margin: 0 0 14px; color: var(--dark); }
-  .md-body h2 { font-size: 1.05rem; font-weight: 700; margin: 22px 0 8px; color: var(--dark);
+  /* ── MARKDOWN CONTENT ── */
+  .md-body h1 { font-size: 1.25rem; font-weight: 800; margin: 0 0 14px; }
+  .md-body h2 { font-size: 1rem; font-weight: 700; margin: 22px 0 8px;
                 padding-bottom: 6px; border-bottom: 1.5px solid #ebebeb; }
-  .md-body h3 { font-size: 0.93rem; font-weight: 700; margin: 16px 0 6px; color: #333; }
-  .md-body p  { font-size: 0.9rem; line-height: 1.65; margin-bottom: 8px; color: #333; }
-  .md-body ul, .md-body ol { padding-left: 20px; margin-bottom: 10px; }
-  .md-body li { font-size: 0.88rem; line-height: 1.6; margin-bottom: 4px; color: #333; }
+  .md-body h3 { font-size: .91rem; font-weight: 700; margin: 16px 0 6px; color: #333; }
+  .md-body p  { font-size: .88rem; line-height: 1.65; margin-bottom: 8px; color: #333; }
+  .md-body ul,
+  .md-body ol { padding-left: 20px; margin-bottom: 10px; }
+  .md-body li { font-size: .86rem; line-height: 1.6; margin-bottom: 4px; color: #333; }
   .md-body strong { font-weight: 700; color: var(--dark); }
   .md-body em     { font-style: italic; color: var(--mid); }
-  .md-body code   { font-size: 0.82rem; background: #f5f5f5; padding: 2px 5px; border-radius: 4px; }
+  .md-body code   { font-size: .8rem; background: #f5f5f5; padding: 2px 5px; border-radius: 4px; }
   .md-body hr     { border: none; border-top: 1.5px solid #ebebeb; margin: 16px 0; }
-
-  /* tables */
-  .md-body table {
-    width: 100%; border-collapse: collapse;
-    font-size: 0.82rem; margin: 10px 0 16px;
-    border-radius: 10px; overflow: hidden;
-    box-shadow: 0 0 0 1px var(--border);
-  }
-  .md-body th {
-    background: var(--dark); color: #fff;
-    padding: 9px 12px; text-align: left; font-weight: 600;
-  }
-  .md-body td { padding: 9px 12px; border-bottom: 1px solid #ebebeb; color: #333; }
+  .md-body table  { width: 100%; border-collapse: collapse; font-size: .8rem;
+                    margin: 10px 0 16px; border-radius: 10px; overflow: hidden;
+                    box-shadow: 0 0 0 1px var(--border); }
+  .md-body th { background: var(--dark); color: #fff; padding: 9px 12px;
+                text-align: left; font-weight: 600; }
+  .md-body td { padding: 8px 12px; border-bottom: 1px solid #ebebeb; color: #333; }
   .md-body tr:last-child td { border-bottom: none; }
   .md-body tr:nth-child(even) td { background: #fafafa; }
+  .md-body .story-item { display: flex; align-items: flex-start; gap: 8px;
+                          margin-bottom: 6px; font-size: .86rem; line-height: 1.55; }
+  .story-cb { width: 15px; height: 15px; border-radius: 3px;
+              border: 1.5px solid var(--border); flex-shrink: 0; margin-top: 2px; }
 
-  /* checkbox items */
-  .md-body .story-item {
-    display: flex; align-items: flex-start; gap: 8px;
-    margin-bottom: 6px; font-size: 0.88rem; line-height: 1.55; color: #333;
+  /* ── MERMAID ── */
+  #mermaid-container {
+    width: 100%; min-height: 260px;
+    display: flex; align-items: center; justify-content: center;
+    overflow-x: auto;
   }
-  .story-cb {
-    width: 16px; height: 16px; border-radius: 4px;
-    border: 1.5px solid var(--border); flex-shrink: 0;
-    margin-top: 2px; display: inline-flex; align-items: center; justify-content: center;
-  }
+  #mermaid-container svg { max-width: 100%; height: auto; }
+  .mermaid-loading { color: var(--mid); font-size: .85rem; display: flex;
+                     align-items: center; gap: 8px; }
+  .mermaid-err { color: #be123c; font-size: .82rem; background: #fff1f2;
+                 border: 1px solid #fecdd3; border-radius: 10px; padding: 14px 18px;
+                 max-width: 100%; overflow-x: auto; white-space: pre-wrap; }
+  .mermaid-src { background: #f5f5f5; border-radius: 10px; padding: 16px 18px;
+                 font-size: .78rem; font-family: monospace; white-space: pre;
+                 overflow-x: auto; margin-top: 14px; color: #444; }
 
-  /* ── BACK BUTTON ── */
-  .btn-back {
-    display: inline-flex; align-items: center; gap: 6px;
-    margin: 24px auto 0; max-width: 900px;
-    padding: 0 24px; text-decoration: none;
-    font-size: 0.82rem; font-weight: 600; color: var(--mid);
-    cursor: pointer; background: none; border: none; font-family: inherit;
-  }
-  .btn-back:hover { color: var(--dark); }
-
-  /* ── FOOTER CHIP ── */
-  .footer-chip {
-    text-align: center; padding: 20px;
-    font-size: 0.73rem; color: var(--mid);
-  }
+  /* ── FOOTER ── */
+  .footer { text-align: center; padding: 22px; font-size: .71rem; color: var(--mid); }
 
   @media (max-width: 600px) {
-    .hero { padding: 40px 16px 24px; }
-    .input-card { padding: 20px 16px 16px; }
-    .sec-card { padding: 18px 16px; }
+    .hero { padding: 36px 16px 22px; }
+    .input-wrap { padding: 0 12px; }
+    .sec-card { padding: 18px 14px; }
     .results-header { flex-direction: column; }
     #results { padding: 0 12px; }
   }
@@ -286,7 +194,7 @@
       <div class="logo-icon">BA</div>
       <div>
         <div class="logo-text">BAlance.ai</div>
-        <div class="logo-sub">ИИ-Автопилот Бизнес-аналитика</div>
+        <div class="logo-sub">ИИ-Автопилот Бизнес-аналитика · BABOK / IEEE 29148</div>
       </div>
     </a>
     <span class="badge">Groq · llama-3.1-8b</span>
@@ -295,27 +203,37 @@
 
 <!-- HERO -->
 <div class="hero">
-  <div class="hero-chip">AI-first · Senior BA Methodology</div>
+  <div class="hero-chip">AI-first · Lead BA Methodology · Cockburn + Mermaid</div>
   <h1>Из идеи —<br>в готовую документацию</h1>
-  <p>Опишите бизнес-задачу в одном предложении.<br>
-     ИИ сгенерирует полный комплект проектных артефактов.</p>
+  <p>Опишите бизнес-задачу. ИИ сгенерирует пирамиду требований,<br>
+     развёрнутые Use Cases, BPMN-процесс и бэклог Jira за секунды.</p>
 </div>
 
-<!-- INPUT CARD -->
-<div class="input-card card" id="input-section">
-  <label class="input-label" for="task-input">Введите краткую бизнес-задачу или идею проекта</label>
-  <textarea id="task-input" placeholder="Например: Автоматизировать складской учёт. Или: Запустить мобильное приложение для доставки еды.&#10;&#10;Чем конкретнее — тем детальнее будет документация."></textarea>
-  <div class="input-hint">
-    <strong>Примеры:</strong> «Создать CRM для отдела продаж» · «Перевести документооборот в электронный вид» · «Разработать личный кабинет для клиентов банка»
+<!-- INPUT -->
+<div class="input-wrap">
+  <div class="input-card card">
+    <label class="input-label" for="task-input">Введите краткую бизнес-задачу или идею проекта</label>
+    <textarea id="task-input"
+      placeholder="Например: Автоматизировать складской учёт. Или: Запустить мобильное приложение для доставки еды.&#10;&#10;Чем конкретнее описание — тем детальнее будет документация."></textarea>
+    <div class="input-hint">
+      <strong>Примеры:</strong> «Создать CRM для отдела продаж» · «Перевести документооборот в электронный вид» · «Разработать личный кабинет клиента банка»
+    </div>
+    <button class="btn-submit" id="btn-generate" onclick="generateDocs()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+      </svg>
+      Сгенерировать полный комплект проектной документации
+    </button>
   </div>
-  <button class="btn-submit" id="btn-generate" onclick="generateDocs()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-    Сгенерировать полный комплект проектной документации
-  </button>
 </div>
 
-<!-- ERROR -->
-<div class="error-box" id="error-box"></div>
+<!-- NOTICES -->
+<div class="notice-wrap">
+  <div class="notice error" id="error-box"></div>
+  <div class="notice warn"  id="demo-note">
+    ⚠ <strong>Демо-режим:</strong> GROQ_API_KEY не задан — показана примерная документация для складского учёта. Добавьте ключ для генерации под вашу задачу.
+  </div>
+</div>
 
 <!-- LOADER -->
 <div id="loader">
@@ -324,40 +242,38 @@
     <div class="loader-txt">Анализирую задачу и генерирую артефакты…</div>
     <div class="loader-steps">
       <div class="lstep active" id="ls1"><span class="dot"></span>Понимаю бизнес-контекст</div>
-      <div class="lstep" id="ls2"><span class="dot"></span>Формирую Vision &amp; Scope</div>
-      <div class="lstep" id="ls3"><span class="dot"></span>Составляю спецификацию требований</div>
-      <div class="lstep" id="ls4"><span class="dot"></span>Пишу Use Cases и User Stories</div>
-      <div class="lstep" id="ls5"><span class="dot"></span>Строю RTM-матрицу</div>
+      <div class="lstep"        id="ls2"><span class="dot"></span>Строю пирамиду требований (BR/UR/FR/NFR)</div>
+      <div class="lstep"        id="ls3"><span class="dot"></span>Прописываю Use Cases по Коберну</div>
+      <div class="lstep"        id="ls4"><span class="dot"></span>Генерирую BPMN-схему процесса</div>
+      <div class="lstep"        id="ls5"><span class="dot"></span>Формирую бэклог Jira / MoSCoW</div>
     </div>
   </div>
-</div>
-
-<!-- DEMO NOTE -->
-<div class="demo-note" id="demo-note">
-  ⚠ <strong>Демо-режим:</strong> GROQ_API_KEY не найден — показана примерная документация. Добавьте ключ для генерации под вашу задачу.
 </div>
 
 <!-- RESULTS -->
 <div id="results">
   <div class="results-header">
     <div>
-      <div class="results-title" id="results-title">Проектная документация</div>
+      <div class="results-title">Проектная документация</div>
       <div class="results-sub" id="results-sub"></div>
     </div>
     <div>
       <div class="export-block">
         <span class="export-label">📥 Экспорт:</span>
         <button class="btn-ex btn-md"   onclick="downloadMd()">
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Markdown
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>Markdown
         </button>
-        <button class="btn-ex btn-docx" onclick="downloadAs('docx')" id="btn-docx">
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Word (.docx)
+        <button class="btn-ex btn-docx" id="btn-docx" onclick="downloadAs('docx')">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>Word (.docx)
         </button>
-        <button class="btn-ex btn-pdf"  onclick="downloadAs('pdf')"  id="btn-pdf">
-          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          PDF
+        <button class="btn-ex btn-pdf"  id="btn-pdf"  onclick="downloadAs('pdf')">
+          <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v8M4 6l3 3 3-3M2 11h10" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>PDF
         </button>
       </div>
       <div class="export-err" id="export-err"></div>
@@ -365,158 +281,192 @@
   </div>
 
   <!-- TABS -->
-  <div class="tabs-wrap">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('vision',    this)">🎯 Vision &amp; Scope</button>
-      <button class="tab"        onclick="switchTab('srs',       this)">📋 Спецификация (SRS)</button>
-      <button class="tab"        onclick="switchTab('usecases',  this)">👤 Use Cases &amp; Stories</button>
-      <button class="tab"        onclick="switchTab('rtm',       this)">🗂 RTM / MoSCoW</button>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('pyramid',  this)">🏛 Пирамида (BR/UR/FR/NFR)</button>
+    <button class="tab"        onclick="switchTab('usecases', this)">📖 Use Cases (Cockburn)</button>
+    <button class="tab"        onclick="switchTab('bpmn',     this)">🔀 BPMN Процесс</button>
+    <button class="tab"        onclick="switchTab('backlog',  this)">🗂 Бэклог / MoSCoW</button>
+  </div>
+
+  <!-- TAB PANELS -->
+  <div class="tab-panel active" id="panel-pyramid">
+    <div class="sec-card">
+      <div class="md-body" id="content-pyramid"></div>
     </div>
   </div>
 
-  <div class="tab-panel active" id="panel-vision">
-    <div class="sec-card"><div class="md-body" id="content-vision"></div></div>
-  </div>
-  <div class="tab-panel" id="panel-srs">
-    <div class="sec-card"><div class="md-body" id="content-srs"></div></div>
-  </div>
   <div class="tab-panel" id="panel-usecases">
-    <div class="sec-card"><div class="md-body" id="content-usecases"></div></div>
+    <div class="sec-card">
+      <div class="md-body" id="content-usecases"></div>
+    </div>
   </div>
-  <div class="tab-panel" id="panel-rtm">
-    <div class="sec-card"><div class="md-body" id="content-rtm"></div></div>
+
+  <div class="tab-panel" id="panel-bpmn">
+    <div class="sec-card">
+      <div style="margin-bottom:14px;">
+        <div style="font-size:.8rem;color:var(--mid);margin-bottom:10px;">
+          Диаграмма процесса To-Be (Mermaid.js · graph TD). Можно скопировать исходный код ниже.
+        </div>
+        <div id="mermaid-container">
+          <div class="mermaid-loading">
+            <div class="spinner" style="width:20px;height:20px;border-width:2px;"></div>
+            Загрузка диаграммы…
+          </div>
+        </div>
+      </div>
+      <details style="margin-top:8px;">
+        <summary style="font-size:.76rem;color:var(--mid);cursor:pointer;user-select:none;">
+          Показать исходный код Mermaid
+        </summary>
+        <pre class="mermaid-src" id="mermaid-src"></pre>
+      </details>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="panel-backlog">
+    <div class="sec-card">
+      <div class="md-body" id="content-backlog"></div>
+    </div>
   </div>
 </div>
 
-<div class="footer-chip">BAlance.ai · AI Business Analyst Autopilot · Groq llama-3.1-8b-instant</div>
+<div class="footer">BAlance.ai · AI Business Analyst Autopilot · Groq llama-3.1-8b-instant · BABOK v3 / IEEE 29148</div>
+
+<!-- MERMAID CDN -->
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'loose' });
+  window._mermaid = mermaid;
+  window._mermaidReady = true;
+  if (window._pendingMermaid) renderMermaidCode(window._pendingMermaid);
+</script>
 
 <script>
-/* ────────────────────────────────────────────────────────────── */
-/* STATE                                                          */
-/* ────────────────────────────────────────────────────────────── */
-var _fullMd   = "";
-var _loaderTm = null;
+/* ─────────────────────────────────────────────── */
+/* STATE                                           */
+/* ─────────────────────────────────────────────── */
+var _fullMd       = "";
+var _mermaidCode  = "";
+var _loaderTm     = null;
+var _loaderStep   = 0;
+var _loaderSteps  = ["ls1","ls2","ls3","ls4","ls5"];
 
-/* ────────────────────────────────────────────────────────────── */
-/* MARKDOWN → HTML  (minimal, inline)                            */
-/* ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────── */
+/* MARKDOWN → HTML  (minimal inline renderer)     */
+/* ─────────────────────────────────────────────── */
 function mdToHtml(md) {
   if (!md) return "";
-  var lines = md.split("\n");
-  var out   = [];
-  var i     = 0;
-  var inUl  = false, inOl = false, inTable = false;
+  var lines  = md.split("\n");
+  var out    = [];
+  var inUl   = false, inOl = false, inTable = false;
 
-  function closeList() {
-    if (inUl) { out.push("</ul>"); inUl = false; }
-    if (inOl) { out.push("</ol>"); inOl = false; }
-  }
-  function closeTable() {
-    if (inTable) { out.push("</tbody></table>"); inTable = false; }
+  function closeList()  { if (inUl) { out.push("</ul>");  inUl = false; }
+                          if (inOl) { out.push("</ol>");  inOl = false; } }
+  function closeTable() { if (inTable) { out.push("</tbody></table>"); inTable = false; } }
+
+  function esc(t) {
+    return t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
   function inline(t) {
-    t = t.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    t = esc(t);
     t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     t = t.replace(/\*(.+?)\*/g,     "<em>$1</em>");
     t = t.replace(/`([^`]+)`/g,     "<code>$1</code>");
     return t;
   }
 
-  while (i < lines.length) {
+  for (var i = 0; i < lines.length; i++) {
     var raw = lines[i];
     var s   = raw.trim();
 
-    // Skip section markers
-    if (/^\[SECTION_/.test(s)) { i++; continue; }
-
-    // Horizontal rule
-    if (/^---+$/.test(s)) {
-      closeList(); closeTable();
-      out.push("<hr>");
-      i++; continue;
-    }
+    if (/^\[TAB_\d\]/.test(s)) continue;
+    if (/^---+$/.test(s))      { closeList(); closeTable(); out.push("<hr>"); continue; }
 
     // Table row
     if (s.startsWith("|") && s.endsWith("|")) {
       closeList();
-      if (/^[\|\s\-:]+$/.test(s)) { i++; continue; }  // separator
+      if (/^[\|\s\-:]+$/.test(s)) continue;
       var cells = s.slice(1,-1).split("|").map(function(c){ return c.trim(); });
       if (!inTable) {
-        out.push('<table><thead><tr>');
+        out.push("<table><thead><tr>");
         cells.forEach(function(c){ out.push("<th>" + inline(c) + "</th>"); });
         out.push("</tr></thead><tbody>");
-        inTable = true;
-        i++; continue;
+        inTable = true; continue;
       }
       out.push("<tr>");
       cells.forEach(function(c){ out.push("<td>" + inline(c) + "</td>"); });
-      out.push("</tr>");
-      i++; continue;
+      out.push("</tr>"); continue;
     }
 
     closeTable();
 
-    // Headings
-    if (/^### /.test(s)) { closeList(); out.push("<h3>" + inline(s.slice(4)) + "</h3>"); i++; continue; }
-    if (/^## /.test(s))  { closeList(); out.push("<h2>" + inline(s.slice(3)) + "</h2>"); i++; continue; }
-    if (/^# /.test(s))   { closeList(); out.push("<h1>" + inline(s.slice(2)) + "</h1>"); i++; continue; }
+    if (/^### /.test(s)) { closeList(); out.push("<h3>" + inline(s.slice(4)) + "</h3>"); continue; }
+    if (/^## /.test(s))  { closeList(); out.push("<h2>" + inline(s.slice(3)) + "</h2>"); continue; }
+    if (/^# /.test(s))   { closeList(); out.push("<h1>" + inline(s.slice(2)) + "</h1>"); continue; }
 
-    // Checkboxes / user stories
     if (/^[-*] \[[ x]\] /.test(s)) {
       if (!inUl) { out.push("<ul style='list-style:none;padding-left:0'>"); inUl = true; }
       var txt = s.replace(/^[-*] \[[ x]\] /, "");
       out.push('<li class="story-item"><span class="story-cb"></span><span>' + inline(txt) + "</span></li>");
-      i++; continue;
+      continue;
     }
-
-    // Bullet list
     if (/^[-*] /.test(s)) {
       if (inOl) { out.push("</ol>"); inOl = false; }
       if (!inUl) { out.push("<ul>"); inUl = true; }
-      out.push("<li>" + inline(s.slice(2)) + "</li>");
-      i++; continue;
+      out.push("<li>" + inline(s.slice(2)) + "</li>"); continue;
     }
-
-    // Numbered list
     if (/^\d+\. /.test(s)) {
       if (inUl) { out.push("</ul>"); inUl = false; }
       if (!inOl) { out.push("<ol>"); inOl = true; }
-      out.push("<li>" + inline(s.replace(/^\d+\. /, "")) + "</li>");
-      i++; continue;
+      out.push("<li>" + inline(s.replace(/^\d+\. /, "")) + "</li>"); continue;
     }
-
-    // Italic-only lines (like _description_)
-    if (s.startsWith("_") && s.endsWith("_")) {
+    if (s.startsWith("_") && s.endsWith("_") && s.length > 2) {
       closeList();
-      out.push("<p><em>" + inline(s.slice(1,-1)) + "</em></p>");
-      i++; continue;
+      out.push("<p><em>" + inline(s.slice(1,-1)) + "</em></p>"); continue;
     }
+    if (!s) { closeList(); closeTable(); continue; }
 
-    // Blank line
-    if (!s) {
-      closeList(); closeTable();
-      i++; continue;
-    }
-
-    // Paragraph
     closeList();
     out.push("<p>" + inline(s) + "</p>");
-    i++;
   }
-
-  closeList();
-  closeTable();
+  closeList(); closeTable();
   return out.join("\n");
 }
 
-/* ────────────────────────────────────────────────────────────── */
-/* LOADER ANIMATION                                              */
-/* ────────────────────────────────────────────────────────────── */
-var _loaderStep = 0;
-var _loaderSteps = ["ls1","ls2","ls3","ls4","ls5"];
+/* ─────────────────────────────────────────────── */
+/* MERMAID RENDER                                  */
+/* ─────────────────────────────────────────────── */
+async function renderMermaidCode(code) {
+  var container = document.getElementById("mermaid-container");
+  var srcEl     = document.getElementById("mermaid-src");
+  if (!code) {
+    container.innerHTML = "<div class='mermaid-err'>Диаграмма не сгенерирована.</div>";
+    return;
+  }
+  srcEl.textContent = code;
+  container.innerHTML = '<div class="mermaid-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Рендеринг диаграммы…</div>';
+
+  if (!window._mermaid) {
+    window._pendingMermaid = code;
+    return;
+  }
+  try {
+    var id = "mermaid-svg-" + Date.now();
+    var result = await window._mermaid.render(id, code);
+    container.innerHTML = result.svg;
+  } catch(e) {
+    container.innerHTML =
+      "<div class='mermaid-err'>⚠ Ошибка рендеринга диаграммы: " + e.message +
+      "<br><br>Исходный код доступен ниже.</div>";
+  }
+}
+
+/* ─────────────────────────────────────────────── */
+/* LOADER                                          */
+/* ─────────────────────────────────────────────── */
 function startLoader() {
   _loaderStep = 0;
-  _loaderSteps.forEach(function(id){
+  _loaderSteps.forEach(function(id) {
     var el = document.getElementById(id);
     el.classList.remove("active","done");
   });
@@ -527,28 +477,29 @@ function startLoader() {
       _loaderStep++;
       document.getElementById(_loaderSteps[_loaderStep]).classList.add("active");
     }
-  }, 1400);
+  }, 1500);
 }
 function stopLoader() {
   if (_loaderTm) { clearInterval(_loaderTm); _loaderTm = null; }
 }
 
-/* ────────────────────────────────────────────────────────────── */
-/* GENERATE                                                       */
-/* ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────── */
+/* GENERATE                                        */
+/* ─────────────────────────────────────────────── */
+var _submitIconHtml = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Сгенерировать полный комплект проектной документации';
+
 async function generateDocs() {
   var task = document.getElementById("task-input").value.trim();
-  if (!task) {
-    showError("Пожалуйста, введите описание бизнес-задачи.");
-    return;
-  }
+  if (!task) { showError("Пожалуйста, введите описание бизнес-задачи."); return; }
 
   hideError();
   document.getElementById("demo-note").style.display = "none";
   document.getElementById("results").style.display   = "none";
   document.getElementById("loader").style.display    = "block";
-  document.getElementById("btn-generate").disabled   = true;
-  document.getElementById("btn-generate").textContent = "Генерируем…";
+
+  var btn = document.getElementById("btn-generate");
+  btn.disabled     = true;
+  btn.textContent  = "Генерируем…";
   startLoader();
 
   try {
@@ -558,61 +509,63 @@ async function generateDocs() {
     var data = await res.json();
 
     stopLoader();
-    document.getElementById("loader").style.display  = "none";
-    document.getElementById("btn-generate").disabled = false;
-    document.getElementById("btn-generate").innerHTML =
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Сгенерировать полный комплект проектной документации';
+    document.getElementById("loader").style.display = "none";
+    btn.disabled   = false;
+    btn.innerHTML  = _submitIconHtml;
 
     if (data.error) { showError("Ошибка: " + data.error); return; }
 
-    _fullMd = data.full_md || "";
-    var secs = data.sections || {};
+    var tabs = data.tabs || {};
+    _fullMd      = data.full_md || "";
+    _mermaidCode = tabs["TAB_3"] || "";
 
-    renderSection("content-vision",    secs["VISION"]   || "");
-    renderSection("content-srs",       secs["SRS"]      || "");
-    renderSection("content-usecases",  secs["USECASES"] || "");
-    renderSection("content-rtm",       secs["RTM"]      || "");
+    document.getElementById("content-pyramid").innerHTML  = mdToHtml(tabs["TAB_1"] || "");
+    document.getElementById("content-usecases").innerHTML = mdToHtml(tabs["TAB_2"] || "");
+    document.getElementById("content-backlog").innerHTML   = mdToHtml(tabs["TAB_4"] || "");
 
-    document.getElementById("results-title").textContent = "Проектная документация";
-    document.getElementById("results-sub").textContent   =
-      "Задача: " + task.slice(0, 80) + (task.length > 80 ? "…" : "");
+    // Reset mermaid container
+    document.getElementById("mermaid-container").innerHTML =
+      '<div class="mermaid-loading"><div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Подготовка диаграммы…</div>';
 
-    if (data.demo) {
-      document.getElementById("demo-note").style.display = "block";
-    }
+    document.getElementById("results-sub").textContent =
+      "Задача: " + task.slice(0, 90) + (task.length > 90 ? "…" : "");
+
+    if (data.demo) document.getElementById("demo-note").style.display = "block";
 
     document.getElementById("results").style.display = "block";
-    // Activate first tab
-    switchTab("vision", document.querySelector(".tab.active") || document.querySelectorAll(".tab")[0]);
+    switchTab("pyramid", document.querySelector(".tab"));
     document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Render mermaid after DOM settled
+    setTimeout(function() { renderMermaidCode(_mermaidCode); }, 300);
 
   } catch(e) {
     stopLoader();
-    document.getElementById("loader").style.display  = "none";
-    document.getElementById("btn-generate").disabled = false;
-    document.getElementById("btn-generate").innerHTML =
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Сгенерировать полный комплект проектной документации';
+    document.getElementById("loader").style.display = "none";
+    btn.disabled  = false;
+    btn.innerHTML = _submitIconHtml;
     showError("Ошибка соединения: " + e.message);
   }
 }
 
-function renderSection(id, md) {
-  document.getElementById(id).innerHTML = mdToHtml(md);
-}
-
-/* ────────────────────────────────────────────────────────────── */
-/* TABS                                                           */
-/* ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────── */
+/* TABS                                            */
+/* ─────────────────────────────────────────────── */
 function switchTab(name, btn) {
-  document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
-  document.querySelectorAll(".tab").forEach(function(b){ b.classList.remove("active"); });
+  document.querySelectorAll(".tab-panel").forEach(function(p) { p.classList.remove("active"); });
+  document.querySelectorAll(".tab").forEach(function(b)       { b.classList.remove("active"); });
   document.getElementById("panel-" + name).classList.add("active");
   if (btn) btn.classList.add("active");
+
+  // Trigger mermaid render when BPMN tab opened
+  if (name === "bpmn" && _mermaidCode) {
+    renderMermaidCode(_mermaidCode);
+  }
 }
 
-/* ────────────────────────────────────────────────────────────── */
-/* DOWNLOAD                                                       */
-/* ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────── */
+/* DOWNLOAD                                        */
+/* ─────────────────────────────────────────────── */
 function downloadMd() {
   if (!_fullMd) return;
   var a = document.createElement("a");
@@ -623,33 +576,27 @@ function downloadMd() {
 
 async function downloadAs(fmt) {
   if (!_fullMd) return;
-  var errEl   = document.getElementById("export-err");
-  var btnId   = fmt === "docx" ? "btn-docx" : "btn-pdf";
-  var btn     = document.getElementById(btnId);
+  var errEl    = document.getElementById("export-err");
+  var btn      = document.getElementById("btn-" + fmt);
   var origHtml = btn.innerHTML;
   errEl.style.display = "none";
-  btn.disabled = true;
+  btn.disabled    = true;
   btn.textContent = "Генерируем…";
 
   try {
     var fd = new FormData();
     fd.append("content", _fullMd);
     var res = await fetch("/download/" + fmt, { method: "POST", body: fd });
-
     if (!res.ok) {
       var err = await res.json().catch(function(){ return { error: "Ошибка сервера" }; });
       throw new Error(err.error || "HTTP " + res.status);
     }
-
     var blob = await res.blob();
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement("a");
-    a.href   = url;
-    a.download = "balance_ai_docs." + fmt;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = "balance_ai_docs." + fmt;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
   } catch(e) {
     errEl.textContent = "⚠ Ошибка: " + e.message;
     errEl.style.display = "block";
@@ -659,24 +606,21 @@ async function downloadAs(fmt) {
   }
 }
 
-/* ────────────────────────────────────────────────────────────── */
-/* UTILS                                                          */
-/* ────────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────── */
+/* UTILS                                           */
+/* ─────────────────────────────────────────────── */
 function showError(msg) {
   var el = document.getElementById("error-box");
-  el.textContent = msg;
-  el.style.display = "block";
+  el.textContent = msg; el.style.display = "block";
 }
-function hideError() {
-  document.getElementById("error-box").style.display = "none";
-}
+function hideError() { document.getElementById("error-box").style.display = "none"; }
 
-// Allow Ctrl+Enter to submit
 document.addEventListener("DOMContentLoaded", function() {
   document.getElementById("task-input").addEventListener("keydown", function(e) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") generateDocs();
   });
 });
 </script>
+
 </body>
 </html>

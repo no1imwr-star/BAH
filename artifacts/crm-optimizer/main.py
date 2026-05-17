@@ -2,15 +2,13 @@ import os
 import re
 from datetime import datetime
 from io import BytesIO
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
-from fastapi.templating import Jinja2Templates
 from groq import Groq
 
 app = FastAPI(title="BAlance.ai — AI Business Analyst Autopilot")
 
 _TMPL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
-templates  = Jinja2Templates(directory=_TMPL_DIR)
 _HTML_FILE = os.path.join(_TMPL_DIR, "index.html")
 
 # ---------------------------------------------------------------------------
@@ -23,255 +21,329 @@ def _get_groq() -> Groq:
     if _groq_client is None:
         api_key = os.environ.get("GROQ_API_KEY", "")
         if not api_key:
-            raise RuntimeError("GROQ_API_KEY не найден в переменных окружения")
+            raise RuntimeError("GROQ_API_KEY не найден")
         _groq_client = Groq(api_key=api_key)
     return _groq_client
 
 
 # ---------------------------------------------------------------------------
-# SYSTEM PROMPT
+# SYSTEM PROMPT  (BABOK / IEEE 29148 + Cockburn + Mermaid)
 # ---------------------------------------------------------------------------
 _SYSTEM_PROMPT = """\
-Ты — Lead Business Analyst с 15-летним опытом в крупных IT-проектах. \
-Твоя задача — превратить краткую бизнес-идею или задачу пользователя \
-в исчерпывающий пакет проектной документации. \
-Выдай ответ строго на русском языке в формате Markdown. \
-Разделяй блоки СТРОГО специальными маркерами, как указано ниже. \
-НЕ добавляй лишнего текста между маркерами и контентом. \
-Используй профессиональный, конкретный язык. Избегай воды и общих фраз.
+Ты — ведущий Бизнес-аналитик (Lead BA) с экспертизой BABOK v3 и IEEE 29148. \
+Превращай бизнес-идею пользователя в исчерпывающий пакет проектной документации. \
+Выдай ответ СТРОГО на русском языке. \
+Разделяй секции ТОЛЬКО указанными маркерами — никакого текста между маркером и контентом секции.
 
-Структура ответа:
+═══════════════════════════════════════════
+[TAB_1]
+## Пирамида требований (BR / UR / FR / NFR)
 
-[SECTION_VISION]
-## Концепция и Границы проекта (Vision & Scope)
+### 🏢 Бизнес-требования (Business Requirements)
+_Глобальные цели организации с измеримыми KPI._
+- **BR-01 [Название]:** Описание цели.
+  - KPI As-Is (сейчас): …
+  - KPI To-Be (цель): …
+- **BR-02 [Название]:** …
 
-### Бизнес-цели
-_Перечисли 3–5 конкретных бизнес-целей с измеримыми KPI._
-- **Цель 1:** … | **KPI:** …
-- **Цель 2:** … | **KPI:** …
+### 👤 Пользовательские требования (User Requirements)
+_Роли (акторы) и их высокоуровневые цели в системе._
+| Актор | Высокоуровневая цель | Боль / проблема сейчас |
+|---|---|---|
+| … | … | … |
 
-### Границы проекта
-
-**Входит в рамки разработки:**
-- …
-
-**НЕ входит в рамки (Out of Scope):**
-- …
-
-### Глоссарий проекта
-| Термин | Определение |
-|---|---|
-| … | … |
-
-[SECTION_SRS]
-## Спецификация требований (SRS)
-
-### Функциональные требования
-_Нумерованный список конкретных требований к функциям системы._
-1. **FR-01 [Название]:** …
+### ⚙️ Функциональные требования (Functional Requirements)
+_Что система ДОЛЖНА делать. Конкретные, атомарные требования._
+1. **FR-01 [Название]:** Система должна …
 2. **FR-02 [Название]:** …
 
-### Нефункциональные требования
-| Категория | Требование | Метрика |
+### 🔒 Нефункциональные требования (Non-Functional Requirements)
+_Качественные характеристики системы с измеримыми SLA._
+| Категория | Требование | Метрика / SLA |
 |---|---|---|
 | Производительность | … | … |
 | Безопасность | … | … |
+| Доступность | … | Uptime ≥ …% |
 | UI/UX | … | … |
-| Надёжность | … | … |
+| Масштабируемость | … | … |
 
-[SECTION_USECASES]
-## Сценарии взаимодействия (Use Cases & User Stories)
+═══════════════════════════════════════════
+[TAB_2]
+## Развёрнутые Use Cases (Cockburn)
 
-### Роли и Акторы
-| Актор | Роль в системе |
-|---|---|
-| … | … |
-
-### Развёрнутый Use Case (Кокберн)
-**Название:** …
+### Use Case UC-01: [Название действия]
 **Актор:** …
 **Предусловия:** …
-**Основной сценарий:**
-1. …
-2. …
-**Расширения (альтернативы/ошибки):**
-- 3a. …
-**Постусловия:** …
+**Постусловия (успех):** …
+**Постусловия (отказ):** …
 
-### User Stories для разработчиков
-- [ ] **US-01:** Как [Роль], я хочу [Функционал], чтобы [Ценность].
-- [ ] **US-02:** Как [Роль], я хочу [Функционал], чтобы [Ценность].
+**Основной успешный сценарий:**
+| № | Действие Актора | Реакция Системы |
+|---|---|---|
+| 1 | … | … |
+| 2 | … | … |
+| 3 | … | … |
 
-[SECTION_RTM]
-## Матрица трассировки требований (RTM / MoSCoW)
+**Расширения и альтернативные сценарии:**
+- **2a. Ошибка валидации данных:** Система выделяет поля с ошибками, отображает подсказку. Актор исправляет данные → возврат к шагу 2.
+- **3a. Отказ внешней системы (API/БД):** Система логирует ошибку, показывает пользователю сообщение «Сервис временно недоступен». Повторная попытка через 30 сек.
+- **4a. Прерывание пользователем (закрытие/назад):** Система предупреждает о несохранённых данных. При подтверждении — сбрасывает форму, возвращает на главную.
+- **5a. Превышение тайм-аута сессии:** Система автоматически завершает сессию, перенаправляет на экран входа с сообщением.
 
-| ID | Требование | Тип | Приоритет MoSCoW | Связанный Use Case | Статус |
-|---|---|---|---|---|---|
-| FR-01 | … | Функц. | Must Have | UC-01 | К разработке |
-| FR-02 | … | Функц. | Should Have | UC-02 | К разработке |
-| NFR-01 | … | Нефункц. | Must Have | — | К разработке |
+_Добавляй аналогичные Use Case UC-02, UC-03 при необходимости._
+
+═══════════════════════════════════════════
+[TAB_3]
+graph TD
+    Start([🟢 Начало]) --> StepA[Шаг 1]
+    StepA --> Gate1{Условие?}
+    Gate1 -->|Да| StepB[Шаг 2 — успех]
+    Gate1 -->|Нет| StepC[Шаг 2 — ошибка]
+    StepB --> StepD[Шаг 3]
+    StepC --> Retry[Повтор / уведомление]
+    Retry --> Gate1
+    StepD --> End([🔴 Конец — успех])
+    StepC --> Fail([🔴 Конец — отказ])
+
+_ВАЖНО: в секции [TAB_3] выдай ТОЛЬКО корректный Mermaid-синтаксис (graph TD) без markdown-обёрток. \
+Используй кириллические метки задач. Включай: стартовое событие, цепочку задач актора и системы, \
+шлюзы-развилки (Gate), финальные события успеха и отказа. Минимум 8-12 узлов._
+
+═══════════════════════════════════════════
+[TAB_4]
+## Бэклог и Трассировка (Jira / MoSCoW)
+
+| ID | Описание требования | Тип | Приоритет MoSCoW | User Story для Jira |
+|---|---|---|---|---|
+| BR-01 | … | Бизнес | Must Have | Как [Роль], я хочу …, чтобы … |
+| FR-01 | … | Функц. | Must Have | Как [Роль], я хочу …, чтобы … |
+| FR-02 | … | Функц. | Should Have | … |
+| NFR-01 | … | Нефункц. | Must Have | … |
 """
 
-_USER_MSG_TEMPLATE = """\
+_USER_MSG = """\
 Бизнес-задача / идея проекта:
 
 {task}
 
-Сгенерируй полный комплект проектной документации согласно инструкции. \
-Будь конкретным и детальным — это реальный рабочий документ для команды разработки.
+Сгенерируй полный комплект документации согласно структуре выше. \
+Будь конкретным — это реальный рабочий документ для команды разработки. \
+В секции [TAB_3] выдай ТОЛЬКО Mermaid graph TD без обёрток.
 """
+
+
+# ---------------------------------------------------------------------------
+# PARSER
+# ---------------------------------------------------------------------------
+_TAB_KEYS = ["TAB_1", "TAB_2", "TAB_3", "TAB_4"]
+
+def _parse_tabs(text: str) -> dict[str, str]:
+    pattern = r"\[(" + "|".join(_TAB_KEYS) + r")\]"
+    parts   = re.split(pattern, text)
+    result: dict[str, str] = {}
+    i = 1
+    while i < len(parts) - 1:
+        key     = parts[i].strip()
+        content = parts[i + 1].strip()
+        result[key] = content
+        i += 2
+    return result
+
+
+def clean_mermaid(raw: str) -> str:
+    """Strip ```mermaid ... ``` wrappers and normalise the diagram string."""
+    raw = re.sub(r"```mermaid\s*", "", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"```\s*",        "", raw)
+    raw = re.sub(r"\[TAB_\d\]\s*", "", raw)   # remove stray markers
+    # Keep only lines that look like Mermaid syntax
+    lines = []
+    for ln in raw.splitlines():
+        s = ln.strip()
+        if not s:
+            continue
+        # Skip pure markdown prose lines (start with #, *, -, |, _) — not Mermaid
+        if re.match(r"^[#*_]", s) and not re.match(r"^(graph|flowchart|sequenceDiagram)", s):
+            continue
+        lines.append(ln)
+    result = "\n".join(lines).strip()
+    # Ensure it starts with a valid Mermaid diagram type
+    if not re.match(r"^(graph|flowchart|sequenceDiagram|classDiagram|gantt)", result):
+        result = "graph TD\n" + result
+    return result
 
 
 # ---------------------------------------------------------------------------
 # AI CALL
 # ---------------------------------------------------------------------------
-_SECTIONS = ["VISION", "SRS", "USECASES", "RTM"]
-
-def _parse_sections(text: str) -> dict[str, str]:
-    """Split AI response into named sections by [SECTION_XXX] markers."""
-    result: dict[str, str] = {}
-    pattern = r"\[SECTION_(" + "|".join(_SECTIONS) + r")\]"
-    parts = re.split(pattern, text)
-    # parts = [pre, NAME, content, NAME, content, ...]
-    i = 1
-    while i < len(parts) - 1:
-        name    = parts[i].strip()
-        content = parts[i + 1].strip()
-        result[name] = content
-        i += 2
-    return result
-
-
 def call_ai(task: str) -> dict:
-    """Call Groq and return parsed sections + full markdown."""
     client = _get_groq()
     completion = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user",   "content": _USER_MSG_TEMPLATE.format(task=task)},
+            {"role": "user",   "content": _USER_MSG.format(task=task)},
         ],
-        temperature=0.4,
+        temperature=0.35,
         max_tokens=4096,
     )
-    raw = completion.choices[0].message.content or ""
-    sections = _parse_sections(raw)
-    full_md  = raw
-    return {"sections": sections, "full_md": full_md}
+    raw  = completion.choices[0].message.content or ""
+    tabs = _parse_tabs(raw)
+
+    # Clean mermaid section
+    if "TAB_3" in tabs:
+        tabs["TAB_3"] = clean_mermaid(tabs["TAB_3"])
+
+    full_md = raw
+    return {"tabs": tabs, "full_md": full_md}
 
 
 # ---------------------------------------------------------------------------
-# DEMO CONTENT (no API key)
+# DEMO CONTENT
 # ---------------------------------------------------------------------------
-_DEMO_SECTIONS = {
-    "VISION": """\
-## Концепция и Границы проекта (Vision & Scope)
+_DEMO_TABS = {
+    "TAB_1": """\
+## Пирамида требований (BR / UR / FR / NFR)
 
-### Бизнес-цели
-- **Цель 1:** Автоматизировать складской учёт | **KPI:** Сократить время инвентаризации на 70% за 6 месяцев
-- **Цель 2:** Исключить ручные ошибки при приёмке | **KPI:** 0 расхождений в отчётах ≥ 99% операций
-- **Цель 3:** Ускорить отгрузку товара | **KPI:** Среднее время отгрузки ≤ 15 минут
+### 🏢 Бизнес-требования (Business Requirements)
+- **BR-01 [Скорость инвентаризации]:** Сократить время полной инвентаризации склада.
+  - KPI As-Is (сейчас): 3 рабочих дня, 15% ошибок
+  - KPI To-Be (цель): 4 часа, 0% ошибок
+- **BR-02 [Себестоимость операций]:** Снизить операционные затраты на складские операции.
+  - KPI As-Is: 120 000 ₽/мес на ручной учёт
+  - KPI To-Be: ≤ 30 000 ₽/мес (автоматизация)
+- **BR-03 [Клиентский сервис]:** Повысить точность и скорость отгрузки.
+  - KPI As-Is: 92% точность, среднее время отгрузки 45 мин
+  - KPI To-Be: 99.9% точность, ≤ 15 мин
 
-### Границы проекта
-
-**Входит в рамки разработки:**
-- Учёт остатков на складе в реальном времени
-- Приёмка и отгрузка товаров с QR/штрих-кодами
-- Отчёты по движению товаров (ежедневные / ежемесячные)
-- Роли пользователей: кладовщик, менеджер, директор
-
-**НЕ входит в рамки (Out of Scope):**
-- Интеграция с 1С (следующая фаза)
-- Мобильное приложение (следующая фаза)
-- Управление поставщиками и закупками
-
-### Глоссарий проекта
-| Термин | Определение |
-|---|---|
-| SKU | Артикул складской единицы учёта |
-| Инвентаризация | Физический подсчёт остатков на складе |
-| Отгрузка | Передача товара клиенту со склада |
-| Приёмка | Принятие товара от поставщика на склад |
-""",
-    "SRS": """\
-## Спецификация требований (SRS)
-
-### Функциональные требования
-1. **FR-01 [Авторизация]:** Система должна поддерживать вход по логину и паролю с разграничением прав по ролям.
-2. **FR-02 [Учёт остатков]:** Система должна отображать актуальные остатки по каждому SKU в режиме реального времени.
-3. **FR-03 [Приёмка]:** Кладовщик должен иметь возможность принять товар с автоматическим обновлением остатков.
-4. **FR-04 [Отгрузка]:** Система должна фиксировать отгрузку и уменьшать остаток, создавая накладную.
-5. **FR-05 [Отчёты]:** Менеджер должен иметь доступ к отчётам о движении товаров за произвольный период.
-
-### Нефункциональные требования
-| Категория | Требование | Метрика |
+### 👤 Пользовательские требования (User Requirements)
+| Актор | Высокоуровневая цель | Боль / проблема сейчас |
 |---|---|---|
-| Производительность | Загрузка любой страницы | ≤ 2 сек при 100 одновременных пользователях |
-| Безопасность | Шифрование паролей | bcrypt, соль ≥ 10 раундов |
-| UI/UX | Минимальное обучение | Новый кладовщик должен освоить систему за 30 минут |
-| Надёжность | Доступность сервиса | 99.5% uptime в рабочее время |
+| Кладовщик | Быстро принимать и отгружать товар без бумаг | Ручной ввод в Excel, постоянные ошибки |
+| Менеджер склада | Видеть остатки и отчёты в реальном времени | Данные устаревают, нет единой картины |
+| Директор | Контролировать KPI и видеть аналитику | Нет дашборда, данные собираются вручную |
+| Бухгалтер | Получать корректные накладные автоматически | Ручная выписка накладных, ошибки в учёте |
+
+### ⚙️ Функциональные требования (Functional Requirements)
+1. **FR-01 [Авторизация по ролям]:** Система должна обеспечивать вход по логину/паролю с разграничением прав (кладовщик / менеджер / директор / бухгалтер).
+2. **FR-02 [Приёмка с QR-кодом]:** Система должна позволять кладовщику сканировать QR-код и автоматически обновлять остатки при приёмке.
+3. **FR-03 [Отгрузка и накладная]:** Система должна формировать электронную накладную при каждой отгрузке и уменьшать остаток в реальном времени.
+4. **FR-04 [Остатки в реальном времени]:** Система должна отображать актуальные остатки по каждому SKU с задержкой не более 1 секунды.
+5. **FR-05 [Автоуведомления]:** Система должна отправлять push-уведомление менеджеру при достижении минимального порога остатка.
+6. **FR-06 [Отчёты и экспорт]:** Система должна предоставлять отчёты по движению товаров за произвольный период с экспортом в Excel и PDF.
+
+### 🔒 Нефункциональные требования (Non-Functional Requirements)
+| Категория | Требование | Метрика / SLA |
+|---|---|---|
+| Производительность | Загрузка любого экрана | ≤ 2 сек при 50 одновременных пользователях |
+| Безопасность | Шифрование паролей | bcrypt, соль ≥ 12 раундов; HTTPS обязателен |
+| Доступность | Время работы сервиса | Uptime ≥ 99.5% в рабочее время (08:00–22:00) |
+| UI/UX | Освоение системы | Новый кладовщик без обучения за ≤ 30 минут |
+| Масштабируемость | Рост нагрузки | Архитектура выдерживает x10 пользователей без рефакторинга |
 """,
-    "USECASES": """\
-## Сценарии взаимодействия (Use Cases & User Stories)
 
-### Роли и Акторы
-| Актор | Роль в системе |
-|---|---|
-| Кладовщик | Осуществляет приёмку и отгрузку товаров |
-| Менеджер | Просматривает отчёты и управляет номенклатурой |
-| Директор | Доступ к сводным аналитическим отчётам |
-| Система | Автоматически обновляет остатки и отправляет уведомления |
+    "TAB_2": """\
+## Развёрнутые Use Cases (Cockburn)
 
-### Развёрнутый Use Case (Кокберн)
-**Название:** UC-01 Приёмка товара на склад
+### Use Case UC-01: Приёмка товара на склад
 **Актор:** Кладовщик
-**Предусловия:** Кладовщик авторизован; у поставщика есть накладная
-**Основной сценарий:**
-1. Кладовщик открывает раздел «Приёмка».
-2. Сканирует QR-код или вводит номер накладной.
-3. Система отображает список товаров из накладной.
-4. Кладовщик сканирует каждую единицу и подтверждает количество.
-5. Система обновляет остатки и создаёт электронную приходную накладную.
+**Предусловия:** Кладовщик авторизован; поставщик предоставил накладную; товар физически на складе.
+**Постусловия (успех):** Остатки обновлены; электронная приходная накладная создана и доступна бухгалтеру.
+**Постусловия (отказ):** Данные не изменены; инцидент записан в журнал ошибок.
+
+**Основной успешный сценарий:**
+| № | Действие Актора | Реакция Системы |
+|---|---|---|
+| 1 | Открывает раздел «Приёмка» | Система отображает форму приёмки и историю последних операций |
+| 2 | Сканирует QR-код накладной поставщика | Система загружает список товаров из накладной, показывает ожидаемое количество |
+| 3 | Сканирует каждую единицу товара | Система подсвечивает позицию, увеличивает счётчик принятого количества |
+| 4 | Подтверждает завершение приёмки | Система сравнивает факт с накладной, формирует расхождения |
+| 5 | Подписывает приёмку (электронная подпись) | Система обновляет остатки, генерирует накладную, уведомляет бухгалтера |
+
+**Расширения и альтернативные сценарии:**
+- **3a. Ошибка валидации (SKU не найден в справочнике):** Система показывает предупреждение «Артикул не найден». Предлагает создать новую позицию номенклатуры или выбрать похожую. Кладовщик выбирает действие → возврат к шагу 3.
+- **4a. Количество не совпадает с накладной (расхождение > 0):** Система выделяет позиции с расхождением красным. Запрашивает комментарий кладовщика. Создаёт акт расхождения. Уведомляет менеджера для согласования.
+- **4b. Отказ сканера / нет связи с устройством:** Система предлагает переключиться на ручной ввод артикула и количества. После ввода продолжает стандартный сценарий.
+- **5a. Ошибка записи в БД (timeout / сбой):** Система сохраняет данные в локальный буфер (offline mode), показывает статус «Синхронизация отложена». Автоматически повторяет запись при восстановлении соединения. Кладовщик видит индикатор «Данные синхронизированы» после успешной записи.
+
+---
+
+### Use Case UC-02: Отгрузка товара клиенту
+**Актор:** Кладовщик
+**Предусловия:** Заказ на отгрузку создан менеджером; товар в наличии.
+**Постусловия (успех):** Остатки уменьшены; расходная накладная создана; статус заказа — «Отгружен».
+
+**Основной успешный сценарий:**
+| № | Действие Актора | Реакция Системы |
+|---|---|---|
+| 1 | Открывает заказ на отгрузку по номеру | Система отображает список позиций к отгрузке |
+| 2 | Сканирует каждую позицию при укладке | Система отмечает позицию как собранную |
+| 3 | Завершает сборку, подтверждает отгрузку | Система генерирует расходную накладную, уменьшает остатки |
+
 **Расширения:**
-- 4a. Количество не совпадает → система запрашивает подтверждение расхождения.
-- 4b. SKU не найден → система предлагает создать новую позицию.
-**Постусловия:** Остатки обновлены; приходная накладная сохранена в системе.
-
-### User Stories для разработчиков
-- [ ] **US-01:** Как кладовщик, я хочу сканировать штрих-код товара, чтобы автоматически обновлять остатки без ручного ввода.
-- [ ] **US-02:** Как менеджер, я хочу выгружать отчёт за период в Excel, чтобы анализировать движение товаров.
-- [ ] **US-03:** Как директор, я хочу видеть дашборд с ключевыми метриками склада, чтобы принимать оперативные решения.
-- [ ] **US-04:** Как кладовщик, я хочу получать уведомление при достижении минимального остатка, чтобы своевременно заказывать товар.
+- **2a. Недостаточно товара на складе:** Система блокирует позицию, уведомляет менеджера о нехватке. Менеджер принимает решение (частичная отгрузка / ожидание).
+- **3a. Клиент отказался от части заказа:** Кладовщик корректирует количество. Система пересчитывает накладную.
 """,
-    "RTM": """\
-## Матрица трассировки требований (RTM / MoSCoW)
 
-| ID | Требование | Тип | Приоритет MoSCoW | Связанный Use Case | Статус |
-|---|---|---|---|---|---|
-| FR-01 | Авторизация по ролям | Функц. | Must Have | UC-00 | К разработке |
-| FR-02 | Учёт остатков в реальном времени | Функц. | Must Have | UC-01 | К разработке |
-| FR-03 | Приёмка товара | Функц. | Must Have | UC-01 | К разработке |
-| FR-04 | Отгрузка и накладная | Функц. | Must Have | UC-02 | К разработке |
-| FR-05 | Отчёты за период | Функц. | Should Have | UC-03 | К разработке |
-| NFR-01 | Производительность ≤ 2 сек | Нефункц. | Must Have | — | К разработке |
-| NFR-02 | Шифрование паролей bcrypt | Нефункц. | Must Have | — | К разработке |
-| NFR-03 | Excel-экспорт отчётов | Функц. | Could Have | UC-03 | К разработке |
-| NFR-04 | Мобильная версия | Функц. | Won't Have | — | Следующая фаза |
+    "TAB_3": """\
+graph TD
+    Start([🟢 Начало: Запрос приёмки]) --> Auth{Кладовщик\nавторизован?}
+    Auth -->|Нет| Login[Экран входа]
+    Login --> Auth
+    Auth -->|Да| OpenForm[Открыть форму приёмки]
+    OpenForm --> ScanQR[Сканировать QR накладной]
+    ScanQR --> LoadItems[Загрузить список позиций]
+    LoadItems --> ScanItem[Сканировать единицу товара]
+    ScanItem --> SKUCheck{SKU найден\nв справочнике?}
+    SKUCheck -->|Нет| CreateSKU[Создать позицию\nноменклатуры]
+    CreateSKU --> ScanItem
+    SKUCheck -->|Да| CountUp[Увеличить счётчик]
+    CountUp --> MoreItems{Ещё позиции?}
+    MoreItems -->|Да| ScanItem
+    MoreItems -->|Нет| Compare[Сравнить факт\nс накладной]
+    Compare --> Diff{Есть\nрасхождения?}
+    Diff -->|Да| ActDiff[Создать акт расхождения\nУведомить менеджера]
+    ActDiff --> Sign[Подписать приёмку]
+    Diff -->|Нет| Sign
+    Sign --> UpdateStock[Обновить остатки]
+    UpdateStock --> DBCheck{Запись\nв БД успешна?}
+    DBCheck -->|Нет| Buffer[Сохранить в буфер\noffline mode]
+    Buffer --> Retry[Повторить при\nвосстановлении связи]
+    Retry --> UpdateStock
+    DBCheck -->|Да| CreateDoc[Создать приходную\nнакладную]
+    CreateDoc --> Notify[Уведомить бухгалтера]
+    Notify --> End([🔴 Конец: Приёмка завершена])\
+""",
+
+    "TAB_4": """\
+## Бэклог и Трассировка (Jira / MoSCoW)
+
+| ID | Описание требования | Тип | Приоритет MoSCoW | User Story для Jira |
+|---|---|---|---|---|
+| BR-01 | Сократить время инвентаризации до 4 часов | Бизнес | Must Have | Как директор, я хочу видеть итоги инвентаризации за 4 часа, чтобы принимать оперативные решения. |
+| BR-02 | Снизить операционные затраты на 75% | Бизнес | Must Have | Как директор, я хочу автоматизировать учёт, чтобы сократить расходы с 120 000 до 30 000 ₽/мес. |
+| FR-01 | Авторизация по ролям | Функц. | Must Have | Как кладовщик, я хочу войти в систему по логину/паролю и видеть только свой функционал. |
+| FR-02 | Приёмка с QR-сканированием | Функц. | Must Have | Как кладовщик, я хочу сканировать QR-код, чтобы остатки обновлялись автоматически. |
+| FR-03 | Отгрузка и электронная накладная | Функц. | Must Have | Как кладовщик, я хочу подтвердить отгрузку и получить накладную без ручного ввода. |
+| FR-04 | Остатки в реальном времени | Функц. | Must Have | Как менеджер, я хочу видеть актуальные остатки в моменте, чтобы избегать дефицита. |
+| FR-05 | Автоуведомления о минимальных остатках | Функц. | Should Have | Как менеджер, я хочу получать push-уведомление, когда товар заканчивается. |
+| FR-06 | Отчёты с экспортом Excel/PDF | Функц. | Should Have | Как бухгалтер, я хочу выгружать отчёт за период в Excel для учёта. |
+| NFR-01 | Производительность ≤ 2 сек | Нефункц. | Must Have | — |
+| NFR-02 | Шифрование bcrypt, HTTPS | Нефункц. | Must Have | — |
+| NFR-03 | Uptime ≥ 99.5% рабочее время | Нефункц. | Must Have | — |
+| NFR-04 | Мобильная версия (iOS/Android) | Функц. | Could Have | Как кладовщик, я хочу работать с системой со смартфона. |
+| NFR-05 | Интеграция с 1С | Функц. | Won't Have | — (следующая фаза) |
 """,
 }
 
 
 # ---------------------------------------------------------------------------
-# HTML HELPERS
+# ROUTES
 # ---------------------------------------------------------------------------
 def _read_html() -> str:
     with open(_HTML_FILE, encoding="utf-8") as f:
         return f.read()
 
 
-# ---------------------------------------------------------------------------
-# ROUTES
-# ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def index():
     return HTMLResponse(_read_html())
@@ -286,20 +358,13 @@ async def analyze(task: str = Form(...)):
     has_key = bool(os.environ.get("GROQ_API_KEY", "").strip())
 
     if not has_key:
-        full_md = "\n\n".join(
-            f"[SECTION_{k}]\n{v}" for k, v in _DEMO_SECTIONS.items()
-        )
-        return JSONResponse({
-            "sections": _DEMO_SECTIONS,
-            "full_md":  full_md,
-            "demo":     True,
-        })
+        full_md = "\n\n".join(f"[{k}]\n{v}" for k, v in _DEMO_TABS.items())
+        return JSONResponse({"tabs": _DEMO_TABS, "full_md": full_md, "demo": True})
 
     try:
         result = call_ai(task)
-        # Fall back to demo if sections are mostly empty
-        if len(result["sections"]) < 2:
-            result["sections"] = _DEMO_SECTIONS
+        if len(result["tabs"]) < 2:
+            result["tabs"] = _DEMO_TABS
         result["demo"] = False
         return JSONResponse(result)
     except Exception as e:
@@ -307,7 +372,7 @@ async def analyze(task: str = Form(...)):
 
 
 # ---------------------------------------------------------------------------
-# MARKDOWN → DOCX CONVERTER
+# MARKDOWN → DOCX
 # ---------------------------------------------------------------------------
 def _bold_run(para, text: str):
     parts = re.split(r"\*\*(.+?)\*\*", text)
@@ -327,12 +392,11 @@ def md_to_docx(md_text: str) -> bytes:
         raise RuntimeError("python-docx не установлен")
 
     doc = Document()
-    style = doc.styles["Normal"]
-    style.font.name = "Calibri"
-    style.font.size = Pt(11)
+    doc.styles["Normal"].font.name = "Calibri"
+    doc.styles["Normal"].font.size = Pt(11)
 
-    lines = md_text.splitlines()
-    i = 0
+    lines       = md_text.splitlines()
+    i           = 0
     table_rows: list = []
 
     def flush_table():
@@ -346,8 +410,7 @@ def md_to_docx(md_text: str) -> bytes:
             for ci, cell_text in enumerate(row[:n_cols]):
                 cell = t.cell(ri, ci)
                 cell.text = ""
-                p = cell.paragraphs[0]
-                run = p.add_run(cell_text)
+                run = cell.paragraphs[0].add_run(cell_text)
                 if ri == 0:
                     run.bold = True
         table_rows.clear()
@@ -357,12 +420,16 @@ def md_to_docx(md_text: str) -> bytes:
         raw = lines[i]
         s   = raw.strip()
 
+        # Skip section markers and mermaid-only content
+        if re.match(r"^\[TAB_\d\]", s):
+            i += 1
+            continue
+
         if s.startswith("|") and s.endswith("|"):
             if re.match(r"^[\|\s\-:]+$", s):
                 i += 1
                 continue
-            cells = [c.strip() for c in s[1:-1].split("|")]
-            table_rows.append(cells)
+            table_rows.append([c.strip() for c in s[1:-1].split("|")])
             i += 1
             continue
 
@@ -377,9 +444,8 @@ def md_to_docx(md_text: str) -> bytes:
         elif s == "---":
             doc.add_paragraph("─" * 55)
         elif re.match(r"^[-*] \[[ x]\] ", s):
-            text = re.sub(r"^[-*] \[[ x]\] ", "☐ ", s)
             p = doc.add_paragraph(style="List Bullet")
-            _bold_run(p, text)
+            _bold_run(p, re.sub(r"^[-*] \[[ x]\] ", "☐ ", s))
         elif s.startswith("- ") or s.startswith("* "):
             p = doc.add_paragraph(style="List Bullet")
             _bold_run(p, s[2:])
@@ -394,7 +460,6 @@ def md_to_docx(md_text: str) -> bytes:
         i += 1
 
     flush_table()
-
     buf = BytesIO()
     doc.save(buf)
     buf.seek(0)
@@ -402,7 +467,7 @@ def md_to_docx(md_text: str) -> bytes:
 
 
 # ---------------------------------------------------------------------------
-# MARKDOWN → PDF CONVERTER  (ReportLab)
+# MARKDOWN → PDF  (ReportLab)
 # ---------------------------------------------------------------------------
 def md_to_pdf(md_text: str) -> bytes:
     try:
@@ -429,9 +494,9 @@ def md_to_pdf(md_text: str) -> bytes:
         if os.path.exists(candidate):
             try:
                 pdfmetrics.registerFont(TTFont("UniFont", candidate))
-                bold_path = candidate.replace("Regular", "Bold")
-                if os.path.exists(bold_path):
-                    pdfmetrics.registerFont(TTFont("UniFont-Bold", bold_path))
+                bold = candidate.replace("Regular", "Bold")
+                if os.path.exists(bold):
+                    pdfmetrics.registerFont(TTFont("UniFont-Bold", bold))
                     _FONT_BOLD = "UniFont-Bold"
                 _FONT_NAME = "UniFont"
             except Exception:
@@ -440,18 +505,17 @@ def md_to_pdf(md_text: str) -> bytes:
 
     accent = colors.HexColor("#FF385C")
     dark   = colors.HexColor("#222222")
-
     sty = {
         "h1":      ParagraphStyle("h1",      fontName=_FONT_BOLD, fontSize=16, textColor=dark,
-                                  spaceAfter=8,  spaceBefore=14, leading=20),
+                                  spaceAfter=8, spaceBefore=14, leading=20),
         "h2":      ParagraphStyle("h2",      fontName=_FONT_BOLD, fontSize=12, textColor=accent,
-                                  spaceAfter=5,  spaceBefore=12, leading=16),
+                                  spaceAfter=5, spaceBefore=12, leading=16),
         "h3":      ParagraphStyle("h3",      fontName=_FONT_BOLD, fontSize=10.5, textColor=dark,
-                                  spaceAfter=4,  spaceBefore=8,  leading=14),
+                                  spaceAfter=4, spaceBefore=8, leading=14),
         "body":    ParagraphStyle("body",    fontName=_FONT_NAME, fontSize=10, textColor=dark,
-                                  spaceAfter=4,  leading=14),
+                                  spaceAfter=4, leading=14),
         "bullet":  ParagraphStyle("bullet",  fontName=_FONT_NAME, fontSize=10, textColor=dark,
-                                  leftIndent=14, spaceAfter=2,   leading=13),
+                                  leftIndent=14, spaceAfter=2, leading=13),
         "cell":    ParagraphStyle("cell",    fontName=_FONT_NAME, fontSize=8.5, textColor=dark,
                                   leading=11),
         "cell_hd": ParagraphStyle("cell_hd", fontName=_FONT_BOLD, fontSize=8.5,
@@ -460,8 +524,8 @@ def md_to_pdf(md_text: str) -> bytes:
 
     def strip_inline(t: str) -> str:
         t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
-        t = re.sub(r"\*(.+?)\*",   r"\1", t)
-        t = re.sub(r"`([^`]+)`",   r"\1", t)
+        t = re.sub(r"\*(.+?)\*",     r"\1", t)
+        t = re.sub(r"`([^`]+)`",     r"\1", t)
         return t.strip()
 
     buf  = BytesIO()
@@ -480,12 +544,12 @@ def md_to_pdf(md_text: str) -> bytes:
         n_cols = max(len(r) for r in table_rows)
         tdata  = []
         for ri, row in enumerate(table_rows):
-            row_cells = []
+            cells = []
             for ci in range(n_cols):
                 txt = row[ci] if ci < len(row) else ""
                 st  = sty["cell_hd"] if ri == 0 else sty["cell"]
-                row_cells.append(Paragraph(strip_inline(txt), st))
-            tdata.append(row_cells)
+                cells.append(Paragraph(strip_inline(txt), st))
+            tdata.append(cells)
         col_w = (A4[0] - 4*cm) / n_cols
         t = Table(tdata, colWidths=[col_w]*n_cols, repeatRows=1)
         t.setStyle(TableStyle([
@@ -506,8 +570,11 @@ def md_to_pdf(md_text: str) -> bytes:
         raw = lines[i]
         s   = raw.strip()
 
-        # Skip section markers
-        if s.startswith("[SECTION_"):
+        if re.match(r"^\[TAB_\d\]", s):
+            i += 1
+            continue
+        # Skip raw Mermaid lines in PDF
+        if re.match(r"^(graph|flowchart|->|-->|\s*[A-Za-z]+\[)", s):
             i += 1
             continue
 
@@ -515,8 +582,7 @@ def md_to_pdf(md_text: str) -> bytes:
             if re.match(r"^[\|\s\-:]+$", s):
                 i += 1
                 continue
-            cells = [c.strip() for c in s[1:-1].split("|")]
-            table_rows.append(cells)
+            table_rows.append([c.strip() for c in s[1:-1].split("|")])
             i += 1
             continue
 
@@ -532,8 +598,8 @@ def md_to_pdf(md_text: str) -> bytes:
             story.append(HRFlowable(width="100%", thickness=0.5,
                                     color=colors.HexColor("#dddddd"), spaceAfter=6))
         elif re.match(r"^[-*] \[[ x]\] ", s):
-            text = "☐ " + strip_inline(re.sub(r"^[-*] \[[ x]\] ", "", s))
-            story.append(Paragraph(text, sty["bullet"]))
+            story.append(Paragraph("☐ " + strip_inline(re.sub(r"^[-*] \[[ x]\] ", "", s)),
+                                   sty["bullet"]))
         elif s.startswith("- ") or s.startswith("* "):
             story.append(Paragraph("• " + strip_inline(s[2:]), sty["bullet"]))
         elif re.match(r"^\d+\. ", s):
@@ -559,7 +625,7 @@ async def download_docx(content: str = Form(...)):
     try:
         data = md_to_docx(content)
     except Exception as e:
-        return JSONResponse({"error": f"Ошибка генерации DOCX: {e}"}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
     filename = f"balance_ai_{datetime.now().strftime('%Y%m%d')}.docx"
     return StreamingResponse(
         BytesIO(data),
@@ -573,7 +639,7 @@ async def download_pdf(content: str = Form(...)):
     try:
         data = md_to_pdf(content)
     except Exception as e:
-        return JSONResponse({"error": f"Ошибка генерации PDF: {e}"}, status_code=500)
+        return JSONResponse({"error": str(e)}, status_code=500)
     filename = f"balance_ai_{datetime.now().strftime('%Y%m%d')}.pdf"
     return StreamingResponse(
         BytesIO(data),
