@@ -9,3 +9,4 @@ groq
 python-docx
 reportlab
 markdown
+streamlit
