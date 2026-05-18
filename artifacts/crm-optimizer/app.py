@@ -8,13 +8,13 @@ from datetime import datetime
 st.set_page_config(page_title="CRM Process Optimizer", page_icon="⚙️", layout="wide")
 
 # ---------------------------------------------------------------------------
-# OpenAI — optional import, graceful fallback to demo mode
+# Groq — optional import, graceful fallback to demo mode
 # ---------------------------------------------------------------------------
 try:
-    from openai import OpenAI as _OpenAI
-    _OPENAI_LIB = True
+    from groq import Groq as _Groq
+    _GROQ_LIB = True
 except Exception:
-    _OPENAI_LIB = False
+    _GROQ_LIB = False
 
 # ---------------------------------------------------------------------------
 # Demo-mode assets
@@ -233,21 +233,20 @@ MOCK_USE_CASE = """# Use Case: Оптимизированный процесс �
 
 
 # ---------------------------------------------------------------------------
-# OpenAI client — returns None if key absent or lib not installed
+# Groq client — returns None if key absent or lib not installed
 # ---------------------------------------------------------------------------
-def get_openai_client():
+def get_groq_client():
     try:
-        if not _OPENAI_LIB:
+        if not _GROQ_LIB:
             return None
-        api_key = None
-        try:
-            api_key = st.secrets.get("OPENAI_API_KEY") or st.secrets.get("openai_api_key")
-        except Exception:
-            pass
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            api_key = os.environ.get("OPENAI_API_KEY")
+            try:
+                api_key = st.secrets.get("GROQ_API_KEY")
+            except Exception:
+                pass
         if api_key:
-            return _OpenAI(api_key=api_key)
+            return _Groq(api_key=api_key)
     except Exception:
         pass
     return None
@@ -256,22 +255,31 @@ def get_openai_client():
 # ---------------------------------------------------------------------------
 # Prompts
 # ---------------------------------------------------------------------------
-_SYSTEM_PROMPT = """Ты — эксперт по бизнес-процессам, CRM-системам и BPMN 2.0.
-Проанализируй структуру CRM-данных и описание проблемы, затем выдай результат строго в формате JSON.
+_SYSTEM_PROMPT = """Ты — Ведущий бизнес-аналитик (Lead BA) с экспертизой BABOK v3, BPMN 2.0 и стандарта Use Case Коберна.
+Проанализируй структуру CRM-данных и описание проблемы. Выдай результат СТРОГО в формате JSON — без markdown-блоков, без пояснений вне JSON.
 
-Формат ответа (только JSON, без markdown-блоков):
+Формат ответа:
 {"bpmn_xml": "<BPMN 2.0 XML>", "use_case": "<Use Case в Markdown>"}
 
-Требования к BPMN XML:
-- Валидный BPMN 2.0, работающий в bpmn-js без ошибок
+ТРЕБОВАНИЯ К BPMN XML:
+- Валидный BPMN 2.0, совместимый с bpmn-js v17 без ошибок импорта
 - Два пула: "Менеджер по продажам" и "CRM-система"
-- Полная секция BPMNDiagram с координатами (BPMNShape и BPMNEdge)
-- Все ID уникальны, все ссылки корректны
-- НЕ использовать обратные кавычки (backtick) в XML
+- Полная секция BPMNDiagram: все BPMNShape и BPMNEdge с координатами dc:Bounds и di:waypoint
+- Все id атрибуты уникальны; все sourceRef/targetRef/processRef корректны
+- НЕ использовать обратные кавычки (backtick) внутри XML
+- Минимум 5 элементов процесса в каждом пуле
 
-Требования к Use Case (стандарт Коберна):
-- Акторы (таблица), Предусловия, Основной сценарий (таблица), Альтернативы, Бизнес-правила, Метрики
-- Форматирование Markdown с таблицами
+ТРЕБОВАНИЯ К USE CASE (стандарт Коберна / Lead BA):
+- Бизнес-стиль: без воды, только конкретика, маркированные списки и таблицы
+- Уровень детализации: пригоден для согласования с CTO и Заказчиком
+- Обязательные разделы:
+  1. Акторы (таблица: Актор | Тип | Описание)
+  2. Предусловия (маркированный список)
+  3. Основной успешный сценарий (таблица: Шаг | Актор | Действие | Результат)
+  4. Альтернативные сценарии и edge cases (включая ошибки API, таймауты, ролевые ограничения)
+  5. Бизнес-правила (таблица: Код | Правило | SLA/метрика)
+  6. Метрики успеха — As-Is vs To-Be (таблица)
+- Форматирование Markdown с таблицами, заголовками H2/H3
 """
 
 
@@ -286,23 +294,27 @@ def build_user_prompt(df, problem_text):
         )
     problem = problem_text.strip() if problem_text else "Не указано — создай типовой оптимизированный процесс."
     return (
-        f"{cols_info}\nПроблема:\n{problem}\n\n"
-        'Ответь строго JSON: {"bpmn_xml": "...", "use_case": "..."}'
+        f"{cols_info}\nПроблема / задача:\n{problem}\n\n"
+        'Ответь строго JSON без markdown: {"bpmn_xml": "...", "use_case": "..."}'
     )
 
 
-def call_openai(client, df, problem_text):
+def call_groq(client, df, problem_text):
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="llama-3.3-70b-versatile",
         messages=[
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": build_user_prompt(df, problem_text)},
         ],
         temperature=0.3,
         max_tokens=6000,
-        response_format={"type": "json_object"},
     )
-    data = json.loads(response.choices[0].message.content)
+    raw = response.choices[0].message.content or ""
+    # Strip accidental markdown code fences
+    import re
+    raw = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.IGNORECASE)
+    raw = re.sub(r"\s*```$", "", raw.strip())
+    data = json.loads(raw)
     return data.get("bpmn_xml", ""), data.get("use_case", "")
 
 
@@ -366,12 +378,12 @@ def main():
     st.title("⚙️ CRM Process Optimizer")
     st.caption("Загрузите данные CRM → опишите проблему → получите BPMN-схему и Use Case от AI")
 
-    client = get_openai_client()
+    client = get_groq_client()
     demo_mode = client is None
 
     if demo_mode:
         st.info(
-            "**Демо-режим:** OPENAI_API_KEY не найден. "
+            "**Демо-режим:** GROQ_API_KEY не найден. "
             "Показан типовой шаблон. Добавьте ключ в переменные окружения для персонализированного анализа.",
             icon="ℹ️",
         )
@@ -418,14 +430,14 @@ def main():
                 st.session_state.use_case = MOCK_USE_CASE.format(date=datetime.now().strftime("%d.%m.%Y"))
             else:
                 try:
-                    bxml, uc = call_openai(client, df, problem)
+                    bxml, uc = call_groq(client, df, problem)
                     if not bxml:
                         st.error("AI не вернул BPMN XML. Попробуйте ещё раз.")
                     else:
                         st.session_state.bpmn_xml = bxml
                         st.session_state.use_case = uc
                 except Exception as exc:
-                    st.error(f"Ошибка обращения к OpenAI: {exc}")
+                    st.error(f"Ошибка обращения к Groq: {exc}")
 
     # --- Results -----------------------------------------------------------
     if st.session_state.bpmn_xml:
@@ -470,7 +482,7 @@ def main():
         st.markdown(
             "---\n"
             "**Форматы:** `.csv`, `.xlsx`, `.xls` &nbsp;·&nbsp; "
-            "**AI:** GPT-4o &nbsp;·&nbsp; "
+            "**AI:** Groq · llama-3.3-70b &nbsp;·&nbsp; "
             "**Без ключа:** демо-режим с готовым шаблоном"
         )
 
